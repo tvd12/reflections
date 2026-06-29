@@ -121,8 +121,12 @@ public class ConfigurationBuilder implements Configuration {
                 filter.add((Predicate<String>) param);
             } else if (param instanceof ExecutorService) {
                 builder.setExecutorService((ExecutorService) param);
-            } else if (Reflections.log != null) {
-                throw new ReflectionsException("could not use param " + param);
+            } else if (!(param instanceof ClassLoader)) {
+                if (Reflections.log != null) {
+                    throw new ReflectionsException(
+                        "could not use param " + param
+                    );
+                }
             }
         }
 
