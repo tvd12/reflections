@@ -23,13 +23,17 @@ import com.tvd12.reflections.vfs.Vfs.UrlType;
  *
  */
 public class UrlTypeVFS implements UrlType {
-    public final static String[] REPLACE_EXTENSION = new String[]{".ear/", ".jar/", ".war/", ".sar/", ".har/", ".par/"};
+
+    public final static String[] REPLACE_EXTENSION = new String[] {
+        ".ear/", ".jar/", ".war/", ".sar/", ".har/", ".par/"
+    };
 
     final String VFSZIP = "vfszip";
     final String VFSFILE = "vfsfile";
 
     public boolean matches(URL url) {
-        return VFSZIP.equals(url.getProtocol()) || VFSFILE.equals(url.getProtocol());
+        return VFSZIP.equals(url.getProtocol())
+            || VFSFILE.equals(url.getProtocol());
     }
 
     public Dir createDir(final URL url) {
@@ -67,11 +71,15 @@ public class UrlTypeVFS implements UrlType {
 
             if (pos > 0) {
                 File file = new File(path.substring(0, pos - 1));
-                if (acceptFile.test(file)) { return replaceZipSeparatorStartingFrom(path, pos); }
+                if (acceptFile.test(file)) {
+                    return replaceZipSeparatorStartingFrom(path, pos);
+                }
             }
         }
 
-        throw new ReflectionsException("Unable to identify the real zip file in path '" + path + "'.");
+        throw new ReflectionsException(
+            "Unable to identify the real zip file in path '" + path + "'."
+        );
     }
 
     int findFirstMatchOfDeployableExtention(String path, int pos) {
@@ -84,11 +92,7 @@ public class UrlTypeVFS implements UrlType {
         }
     }
 
-    Predicate<File> realFile = new Predicate<File>() {
-        public boolean test(File file) {
-            return file.exists() && file.isFile();
-        }
-    };
+    Predicate<File> realFile = file -> file.exists() && file.isFile();
 
     URL replaceZipSeparatorStartingFrom(String path, int pos)
             throws MalformedURLException {
@@ -103,12 +107,12 @@ public class UrlTypeVFS implements UrlType {
             }
         }
 
-        String prefix = "";
+        StringBuilder prefix = new StringBuilder();
         for (int i = 0; i < numSubs; i++) {
-            prefix += "zip:";
+            prefix.append("zip:");
         }
 
-        if (zipPath.trim().length() == 0) {
+        if (zipPath.trim().isEmpty()) {
             return new URL(prefix + "/" + zipFile);
         } else {
             return new URL(prefix + "/" + zipFile + "!" + zipPath);

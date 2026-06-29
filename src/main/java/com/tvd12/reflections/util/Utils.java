@@ -1,17 +1,13 @@
 package com.tvd12.reflections.util;
 
+import com.tvd12.reflections.Reflections;
+import com.tvd12.reflections.ReflectionsException;
+import com.tvd12.reflections.scanners.Scanner;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.tvd12.reflections.Reflections;
-import com.tvd12.reflections.ReflectionsException;
-import com.tvd12.reflections.scanners.Scanner;
-
 import javax.annotation.Nullable;
-
-import static com.tvd12.reflections.ReflectionUtils.forName;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,6 +20,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+import static com.tvd12.reflections.ReflectionUtils.forName;
+
 /**
  * a garbage can of convenient methods
  */
@@ -32,11 +30,9 @@ public abstract class Utils {
 
     public static String repeat(String string, int times) {
         StringBuilder sb = new StringBuilder();
-
         for (int i = 0; i < times; i++) {
             sb.append(string);
         }
-
         return sb.toString();
     }
 
@@ -44,7 +40,7 @@ public abstract class Utils {
      * isEmpty compatible with Java 5
      */
     public static boolean isEmpty(String s) {
-        return s == null || s.length() == 0;
+        return s == null || s.isEmpty();
     }
 
     public static boolean isEmpty(Object[] objects) {
@@ -61,69 +57,108 @@ public abstract class Utils {
         return file;
     }
 
-    public static Member getMemberFromDescriptor(String descriptor, ClassLoader... classLoaders) throws ReflectionsException {
+    public static Member getMemberFromDescriptor(
+        String descriptor,
+        ClassLoader... classLoaders
+    ) throws ReflectionsException {
         int p0 = descriptor.lastIndexOf('(');
-        String memberKey = p0 != -1 ? descriptor.substring(0, p0) : descriptor;
-        String methodParameters = p0 != -1 ? descriptor.substring(p0 + 1, descriptor.lastIndexOf(')')) : "";
+        String memberKey = p0 != -1
+            ? descriptor.substring(0, p0)
+            : descriptor;
+        String methodParameters = p0 != -1
+            ? descriptor.substring(p0 + 1, descriptor.lastIndexOf(')'))
+            : "";
 
-        int p1 = Math.max(memberKey.lastIndexOf('.'), memberKey.lastIndexOf("$"));
-        String className = memberKey.substring(memberKey.lastIndexOf(' ') + 1, p1);
+        int p1 = Math.max(
+            memberKey.lastIndexOf('.'),
+            memberKey.lastIndexOf("$")
+        );
+        String className = memberKey
+            .substring(memberKey.lastIndexOf(' ') + 1, p1);
         String memberName = memberKey.substring(p1 + 1);
 
         Class<?>[] parameterTypes = null;
         if (!isEmpty(methodParameters)) {
             String[] parameterNames = methodParameters.split(",");
-            List<Class<?>> result = new ArrayList<Class<?>>(parameterNames.length);
+            List<Class<?>> result = new ArrayList<>(parameterNames.length);
             for (String name : parameterNames) {
                 result.add(forName(name.trim(), classLoaders));
             }
-            parameterTypes = result.toArray(new Class<?>[result.size()]);
+            parameterTypes = result.toArray(new Class<?>[0]);
         }
 
         Class<?> aClass = forName(className, classLoaders);
         while (aClass != null) {
             try {
                 if (!descriptor.contains("(")) {
-                    return aClass.isInterface() ? aClass.getField(memberName) : aClass.getDeclaredField(memberName);
+                    return aClass.isInterface()
+                        ? aClass.getField(memberName)
+                        : aClass.getDeclaredField(memberName);
                 } else if (isConstructor(descriptor)) {
-                    return aClass.isInterface() ? aClass.getConstructor(parameterTypes) : aClass.getDeclaredConstructor(parameterTypes);
+                    return aClass.isInterface()
+                        ? aClass.getConstructor(parameterTypes)
+                        : aClass.getDeclaredConstructor(parameterTypes);
                 } else {
-                    return aClass.isInterface() ? aClass.getMethod(memberName, parameterTypes) : aClass.getDeclaredMethod(memberName, parameterTypes);
+                    return aClass.isInterface()
+                        ? aClass.getMethod(memberName, parameterTypes)
+                        : aClass.getDeclaredMethod(memberName, parameterTypes);
                 }
             } catch (Exception e) {
                 aClass = aClass.getSuperclass();
             }
         }
-        throw new ReflectionsException("Can't resolve member named " + memberName + " for class " + className);
+        throw new ReflectionsException(
+            "Can't resolve member named " + memberName +
+                " for class " + className
+        );
     }
 
-    public static Set<Method> getMethodsFromDescriptors(Iterable<String> annotatedWith, ClassLoader... classLoaders) {
+    public static Set<Method> getMethodsFromDescriptors(
+        Iterable<String> annotatedWith,
+        ClassLoader... classLoaders
+    ) {
         Set<Method> result = Sets.newHashSet();
         for (String annotated : annotatedWith) {
             if (!isConstructor(annotated)) {
-                Method member = (Method) getMemberFromDescriptor(annotated, classLoaders);
-                if (member != null) result.add(member);
+                Method member = (Method) getMemberFromDescriptor(
+                    annotated,
+                    classLoaders
+                );
+                if (member != null) {
+                    result.add(member);
+                }
             }
         }
         return result;
     }
 
-	public static Set<Constructor> getConstructorsFromDescriptors(Iterable<String> annotatedWith, ClassLoader... classLoaders) {
+	public static Set<Constructor> getConstructorsFromDescriptors(
+        Iterable<String> annotatedWith,
+        ClassLoader... classLoaders
+    ) {
         Set<Constructor> result = Sets.newHashSet();
         for (String annotated : annotatedWith) {
             if (isConstructor(annotated)) {
-                Constructor member = (Constructor) getMemberFromDescriptor(annotated, classLoaders);
-                if (member != null) result.add(member);
+                Constructor member =
+                    (Constructor) getMemberFromDescriptor(annotated, classLoaders);
+                if (member != null) {
+                    result.add(member);
+                }
             }
         }
         return result;
     }
 
-    public static Set<Member> getMembersFromDescriptors(Iterable<String> values, ClassLoader... classLoaders) {
+    public static Set<Member> getMembersFromDescriptors(
+        Iterable<String> values,
+        ClassLoader... classLoaders
+    ) {
         Set<Member> result = Sets.newHashSet();
         for (String value : values) {
             try {
-                result.add(Utils.getMemberFromDescriptor(value, classLoaders));
+                result.add(
+                    Utils.getMemberFromDescriptor(value, classLoaders)
+                );
             } catch (ReflectionsException e) {
                 throw new ReflectionsException("Can't resolve member named " + value, e);
             }
@@ -131,14 +166,26 @@ public abstract class Utils {
         return result;
     }
 
-    public static Field getFieldFromString(String field, ClassLoader... classLoaders) {
-        String className = field.substring(0, field.lastIndexOf('.'));
-        String fieldName = field.substring(field.lastIndexOf('.') + 1);
+    public static Field getFieldFromString(
+        String field,
+        ClassLoader... classLoaders
+    ) {
+        String className = field
+            .substring(0, field.lastIndexOf('.'));
+        String fieldName = field
+            .substring(field.lastIndexOf('.') + 1);
 
         try {
-            return forName(className, classLoaders).getDeclaredField(fieldName);
+            Class type = forName(className, classLoaders);
+            if (type == null) {
+                throw new ClassNotFoundException(className);
+            }
+            return type.getDeclaredField(fieldName);
         } catch (Throwable e) {
-            throw new ReflectionsException("Can't resolve field named " + fieldName, e);
+            throw new ReflectionsException(
+                "Can't resolve field named " + fieldName,
+                e
+            );
         }
     }
 
@@ -190,7 +237,7 @@ public abstract class Utils {
 
 
     public static List<String> names(Iterable<Class<?>> types) {
-        List<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
         for (Class<?> type : types) result.add(name(type));
         return result;
     }
