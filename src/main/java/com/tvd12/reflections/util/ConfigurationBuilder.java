@@ -320,7 +320,13 @@ public class ConfigurationBuilder implements Configuration {
 
     /** add class loader, might be used for resolving methods/fields */
     public ConfigurationBuilder addClassLoaders(ClassLoader... classLoaders) {
-        this.classLoaders = this.classLoaders == null ? classLoaders : ObjectArrays.concat(this.classLoaders, classLoaders, ClassLoader.class);
+        this.classLoaders = this.classLoaders == null
+            ? classLoaders
+            : ObjectArrays.concat(
+                this.classLoaders,
+                classLoaders,
+                ClassLoader.class
+            );
         return this;
     }
 
