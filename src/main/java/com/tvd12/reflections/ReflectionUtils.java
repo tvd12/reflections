@@ -28,13 +28,13 @@ import com.tvd12.reflections.util.Sets;
  *     1. some helper methods to get type by name: {@link #forName(String, ClassLoader...)} and {@link #forNames(Iterable, ClassLoader...)}
  * <p>
  *     2. some helper methods to get all types/methods/fields/constructors/properties matching some predicates, generally:
- *     <pre> Set&#60?> result = getAllXXX(type/s, withYYY) </pre>
+ *     <pre> Set&#60;?> result = getAllXXX(type/s, withYYY) </pre>
  *     <p>where get methods are:
  *     <ul>
- *         <li>{@link #getAllSuperTypes(Class, com.google.common.base.Predicate...)}
- *         <li>{@link #getAllFields(Class, com.google.common.base.Predicate...)}
- *         <li>{@link #getAllMethods(Class, com.google.common.base.Predicate...)}
- *         <li>{@link #getAllConstructors(Class, com.google.common.base.Predicate...)}
+ *         <li>{@link #getAllSuperTypes(Class, java.util.function.Predicate[])}
+ *         <li>{@link #getAllFields(Class, java.util.function.Predicate[])}
+ *         <li>{@link #getAllMethods(Class, java.util.function.Predicate[])}
+ *         <li>{@link #getAllConstructors(Class, java.util.function.Predicate[])}
  *     </ul>
  *     <p>and predicates included here all starts with "with", such as 
  *     <ul>
@@ -54,7 +54,7 @@ import com.tvd12.reflections.util.Sets;
  *     <p><br>
  *      for example, getting all getters would be:
  *     <pre>
- *      Set&#60Method> getters = getAllMethods(someClasses, 
+ *      Set&#60;Method> getters = getAllMethods(someClasses, 
  *              Predicates.and(
  *                      withModifier(Modifier.PUBLIC), 
  *                      withPrefix("get"), 
@@ -64,7 +64,7 @@ import com.tvd12.reflections.util.Sets;
 @SuppressWarnings({"unchecked", "rawtypes"})
 public abstract class ReflectionUtils {
 
-    /** would include {@code Object.class} when {@link #getAllSuperTypes(Class, com.google.common.base.Predicate[])}. default is false. */
+    /** would include {@code Object.class} when {@link #getAllSuperTypes(Class, java.util.function.Predicate[])}. default is false. */
     public static boolean includeObject = false;
 
     /** get all super types of given {@code type}, including, optionally filtered by {@code predicates}

@@ -221,13 +221,13 @@ public class ConfigurationBuilder implements Configuration {
     }
 
     /** sets the input filter for all resources to be scanned.
-     * <p> supply a {@link com.google.common.base.Predicate} or use the {@link FilterBuilder}*/
+     * <p> supply a {@link java.util.function.Predicate} or use the {@link FilterBuilder}*/
     public void setInputsFilter(@Nullable Predicate<String> inputsFilter) {
         this.inputsFilter = inputsFilter;
     }
 
     /** sets the input filter for all resources to be scanned.
-     * <p> supply a {@link com.google.common.base.Predicate} or use the {@link FilterBuilder}*/
+     * <p> supply a {@link java.util.function.Predicate} or use the {@link FilterBuilder}*/
     public ConfigurationBuilder filterInputsBy(Predicate<String> inputsFilter) {
         this.inputsFilter = inputsFilter;
         return this;

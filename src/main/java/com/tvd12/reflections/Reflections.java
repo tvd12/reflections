@@ -91,7 +91,7 @@ import static java.lang.String.format;
  * <p>Use {@link #getStore()} to access and query the store directly
  * <p>In order to save the store metadata, use {@link #save(String)} or {@link #save(String, com.tvd12.reflections.serializers.Serializer)}
  * for example with {@link com.tvd12.reflections.serializers.XmlSerializer} or {@link com.tvd12.reflections.serializers.JavaCodeSerializer}
- * <p>In order to collect pre saved metadata and avoid re-scanning, use {@link #collect(String, com.google.common.base.Predicate, com.tvd12.reflections.serializers.Serializer...)}}
+ * <p>In order to collect pre saved metadata and avoid re-scanning, use {@link #collect(String, java.util.function.Predicate, com.tvd12.reflections.serializers.Serializer...)}
  * <p><i>Make sure to scan all the transitively relevant packages.
  * <br>for instance, given your class C extends B extends A, and both B and A are located in another package than C,
  * when only the package of C is scanned - then querying for sub types of A returns nothing (transitive), but querying for sub types of B returns C (direct).
