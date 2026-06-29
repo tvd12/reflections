@@ -103,7 +103,12 @@ public class Store {
 
     /** recursively get the values stored for the given {@code index} and {@code keys}, not including keys */
     public Iterable<String> getAll(String index, String key) {
-        return getAllIncluding(index, get(index, key), new IterableChain<>(), new HashSet<>());
+        return getAllIncluding(
+            index,
+            get(index, key),
+            new IterableChain<>(),
+            new HashSet<>()
+        );
     }
 
     /** recursively get the values stored for the given {@code index} and {@code keys}, not including keys */

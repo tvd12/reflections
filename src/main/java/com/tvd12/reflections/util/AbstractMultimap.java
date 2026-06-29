@@ -66,8 +66,9 @@ public class AbstractMultimap<K, V> implements Multimap<K, V> {
 		List<Entry<K, V>> result = new ArrayList<>();
 		for (Object key : map.keySet()) {
 			Collection<V> items = (Collection<V>) map.get(key);
-			for (V value : items)
+			for (V value : items) {
 				result.add(new ImmutableEntry<>((K) key, value));
+			}
 		}
 		return result;
 	}
