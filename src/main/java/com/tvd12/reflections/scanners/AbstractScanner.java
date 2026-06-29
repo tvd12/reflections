@@ -31,6 +31,9 @@ public abstract class AbstractScanner implements Scanner {
                 throw new ReflectionsException("could not create class object from file " + file.getRelativePath(), e);
             }
         }
+        if (classObject == null) {
+            return null;
+        }
         scan(classObject);
         return classObject;
     }

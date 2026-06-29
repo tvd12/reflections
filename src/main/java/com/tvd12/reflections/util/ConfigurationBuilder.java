@@ -1,17 +1,5 @@
 package com.tvd12.reflections.util;
 
-import java.net.URL;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.function.Predicate;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 import com.tvd12.reflections.Configuration;
 import com.tvd12.reflections.Reflections;
 import com.tvd12.reflections.ReflectionsException;
@@ -24,6 +12,17 @@ import com.tvd12.reflections.scanners.SubTypesScanner;
 import com.tvd12.reflections.scanners.TypeAnnotationsScanner;
 import com.tvd12.reflections.serializers.Serializer;
 import com.tvd12.reflections.serializers.XmlSerializer;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.net.URL;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.function.Predicate;
 
 /**
  * a fluent builder for {@link com.tvd12.reflections.Configuration}, to be used for constructing a {@link com.tvd12.reflections.Reflections} instance
@@ -42,7 +41,7 @@ import com.tvd12.reflections.serializers.XmlSerializer;
  */
 /*lazy*/ @SuppressWarnings("rawtypes")
 public class ConfigurationBuilder implements Configuration {
-    @Nonnull private Set<Scanner> scanners;
+    @Nonnull private final Set<Scanner> scanners;
     @Nonnull private Set<URL> urls;
 	protected MetadataAdapter metadataAdapter;
     @Nullable private Predicate<String> inputsFilter;
@@ -52,7 +51,10 @@ public class ConfigurationBuilder implements Configuration {
     private boolean expandSuperTypes = true;
 
     public ConfigurationBuilder() {
-        scanners = Sets.<Scanner>newHashSet(new TypeAnnotationsScanner(), new SubTypesScanner());
+        scanners = Sets.newHashSet(
+            new TypeAnnotationsScanner(),
+            new SubTypesScanner()
+        );
         urls = Sets.newHashSet();
     }
 
@@ -89,7 +91,9 @@ public class ConfigurationBuilder implements Configuration {
         List<ClassLoader> loaders = Lists.newArrayList();
         for (Object param : parameters) if (param instanceof ClassLoader) loaders.add((ClassLoader) param);
 
-        ClassLoader[] classLoaders = loaders.isEmpty() ? null : loaders.toArray(new ClassLoader[loaders.size()]);
+        ClassLoader[] classLoaders = loaders.isEmpty()
+            ? new ClassLoader[0]
+            : loaders.toArray(new ClassLoader[0]);
         FilterBuilder filter = new FilterBuilder();
         List<Scanner> scanners = Lists.newArrayList();
 
@@ -108,26 +112,30 @@ public class ConfigurationBuilder implements Configuration {
                 }
                 builder.addUrls(ClasspathHelper.forClass((Class) param, classLoaders));
                 filter.includePackage(((Class) param));
+            } else if (param instanceof Scanner) {
+                scanners.add((Scanner) param);
+            } else if (param instanceof URL) {
+                builder.addUrls((URL) param);
+            } else if (param instanceof Predicate) {
+                filter.add((Predicate<String>) param);
+            } else if (param instanceof ExecutorService) {
+                builder.setExecutorService((ExecutorService) param);
+            } else if (Reflections.log != null) {
+                throw new ReflectionsException("could not use param " + param);
             }
-            else if (param instanceof Scanner) { scanners.add((Scanner) param); }
-            else if (param instanceof URL) { builder.addUrls((URL) param); }
-            else if (param instanceof ClassLoader) { /* already taken care */ }
-            else if (param instanceof Predicate) { filter.add((Predicate<String>) param); }
-            else if (param instanceof ExecutorService) { builder.setExecutorService((ExecutorService) param); }
-            else if (Reflections.log != null) { throw new ReflectionsException("could not use param " + param); }
         }
 
         if (builder.getUrls().isEmpty()) {
-            if (classLoaders != null) {
-                builder.addUrls(ClasspathHelper.forClassLoader(classLoaders)); //default urls getResources("")
-            } else {
-                builder.addUrls(ClasspathHelper.forClassLoader()); //default urls getResources("")
-            }
+            builder.addUrls(ClasspathHelper.forClassLoader(classLoaders)); //default urls getResources("")
         }
 
         builder.filterInputsBy(filter);
-        if (!scanners.isEmpty()) { builder.setScanners(scanners.toArray(new Scanner[scanners.size()])); }
-        if (!loaders.isEmpty()) { builder.addClassLoaders(loaders); }
+        if (!scanners.isEmpty()) {
+            builder.setScanners(scanners.toArray(new Scanner[0]));
+        }
+        if (!loaders.isEmpty()) {
+            builder.addClassLoaders(loaders);
+        }
 
         return builder;
     }
@@ -210,7 +218,9 @@ public class ConfigurationBuilder implements Configuration {
     }
 
     /** sets the metadata adapter used to fetch metadata from classes */
-    public ConfigurationBuilder setMetadataAdapter(final MetadataAdapter metadataAdapter) {
+    public ConfigurationBuilder setMetadataAdapter(
+        final MetadataAdapter metadataAdapter
+    ) {
         this.metadataAdapter = metadataAdapter;
         return this;
     }
@@ -306,7 +316,9 @@ public class ConfigurationBuilder implements Configuration {
     }
 
     /** add class loader, might be used for resolving methods/fields */
-    public ConfigurationBuilder addClassLoaders(Collection<ClassLoader> classLoaders) {
-        return addClassLoaders(classLoaders.toArray(new ClassLoader[classLoaders.size()]));
+    public ConfigurationBuilder addClassLoaders(
+        Collection<ClassLoader> classLoaders
+    ) {
+        return addClassLoaders(classLoaders.toArray(new ClassLoader[0]));
     }
 }

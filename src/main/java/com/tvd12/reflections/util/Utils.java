@@ -82,7 +82,10 @@ public abstract class Utils {
             String[] parameterNames = methodParameters.split(",");
             List<Class<?>> result = new ArrayList<>(parameterNames.length);
             for (String name : parameterNames) {
-                result.add(forName(name.trim(), classLoaders));
+                Class<?> paramType = forName(name.trim(), classLoaders);
+                if (paramType != null) {
+                    result.add(paramType);
+                }
             }
             parameterTypes = result.toArray(new Class<?>[0]);
         }

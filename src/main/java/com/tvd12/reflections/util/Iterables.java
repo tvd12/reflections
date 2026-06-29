@@ -8,6 +8,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import javax.annotation.Nonnull;
+
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public final class Iterables {
 
@@ -24,6 +26,7 @@ public final class Iterables {
 
 	public static <T> Iterable<T> filter(final Iterable<T> unfiltered, final Predicate<T> retainIfTrue) {
 		return new Iterable<T>() {
+			@Nonnull
 			@Override
 			public Iterator<T> iterator() {
 				return Iterators.filter(unfiltered.iterator(), retainIfTrue);
@@ -50,17 +53,13 @@ public final class Iterables {
 	}
 
 	public static <T> Iterable<T> concat(Iterable<? extends T>... inputs) {
-		return new Iterable<T>() {
-			@Override
-			public Iterator<T> iterator() {
-				return Iterators.concat(new AbstractIndexedListIterator<Iterator<? extends T>>(inputs.length) {
-					@Override
-					public Iterator<? extends T> get(int i) {
-						return inputs[i].iterator();
-					}
-				});
-			}
-		};
+		return () -> Iterators.concat(
+			new AbstractIndexedListIterator<Iterator<? extends T>>(inputs.length) {
+				@Override
+				public Iterator<? extends T> get(int i) {
+					return inputs[i].iterator();
+				}
+        	});
 	}
 
 	public static <T> Iterable<T> concat(Iterable<? extends Iterable<? extends T>> inputs) {

@@ -28,12 +28,10 @@ public class JavassistAdapter implements MetadataAdapter<ClassFile, FieldInfo, M
     public static boolean includeInvisibleTag = true;
 
 	public List<FieldInfo> getFields(final ClassFile cls) {
-        //noinspection unchecked
         return cls.getFields();
     }
 
     public List<MethodInfo> getMethods(final ClassFile cls) {
-        //noinspection unchecked
         return cls.getMethods();
     }
 
@@ -65,17 +63,19 @@ public class JavassistAdapter implements MetadataAdapter<ClassFile, FieldInfo, M
     public List<String> getParameterAnnotationNames(final MethodInfo method, final int parameterIndex) {
         List<String> result = Lists.newArrayList();
 
-        List<ParameterAnnotationsAttribute> parameterAnnotationsAttributes = Lists.newArrayList((ParameterAnnotationsAttribute) method.getAttribute(ParameterAnnotationsAttribute.visibleTag),
-                (ParameterAnnotationsAttribute) method.getAttribute(ParameterAnnotationsAttribute.invisibleTag));
+        List<ParameterAnnotationsAttribute> parameterAnnotationsAttributes = Lists
+            .newArrayList((ParameterAnnotationsAttribute) method.getAttribute(
+                ParameterAnnotationsAttribute.visibleTag),
+                (ParameterAnnotationsAttribute) method
+                    .getAttribute(ParameterAnnotationsAttribute.invisibleTag)
+            );
 
-        if (parameterAnnotationsAttributes != null) {
-            for (ParameterAnnotationsAttribute parameterAnnotationsAttribute : parameterAnnotationsAttributes) {
-                if (parameterAnnotationsAttribute != null) {
-                    Annotation[][] annotations = parameterAnnotationsAttribute.getAnnotations();
-                    if (parameterIndex < annotations.length) {
-                        Annotation[] annotation = annotations[parameterIndex];
-                        result.addAll(getAnnotationNames(annotation));
-                    }
+        for (ParameterAnnotationsAttribute parameterAnnotationsAttribute : parameterAnnotationsAttributes) {
+            if (parameterAnnotationsAttribute != null) {
+                Annotation[][] annotations = parameterAnnotationsAttribute.getAnnotations();
+                if (parameterIndex < annotations.length) {
+                    Annotation[] annotation = annotations[parameterIndex];
+                    result.addAll(getAnnotationNames(annotation));
                 }
             }
         }
@@ -122,12 +122,15 @@ public class JavassistAdapter implements MetadataAdapter<ClassFile, FieldInfo, M
     }
 
     public boolean isPublic(Object o) {
-        Integer accessFlags =
-                o instanceof ClassFile ? ((ClassFile) o).getAccessFlags() :
-                o instanceof FieldInfo ? ((FieldInfo) o).getAccessFlags() :
-                o instanceof MethodInfo ? ((MethodInfo) o).getAccessFlags() : null;
-
-        return accessFlags != null && AccessFlag.isPublic(accessFlags);
+        int accessFlags =
+            o instanceof ClassFile
+                ? ((ClassFile) o).getAccessFlags()
+                : o instanceof FieldInfo
+                    ? ((FieldInfo) o).getAccessFlags()
+                    : o instanceof MethodInfo
+                        ? ((MethodInfo) o).getAccessFlags()
+                        : 0;
+        return AccessFlag.isPublic(accessFlags);
     }
 
     //
@@ -177,7 +180,7 @@ public class JavassistAdapter implements MetadataAdapter<ClassFile, FieldInfo, M
     private List<String> splitDescriptorToTypeNames(final String descriptors) {
         List<String> result = Lists.newArrayList();
 
-        if (descriptors != null && descriptors.length() != 0) {
+        if (descriptors != null && !descriptors.isEmpty()) {
 
             List<Integer> indices = Lists.newArrayList();
             Descriptor.Iterator iterator = new Descriptor.Iterator(descriptors);

@@ -94,8 +94,11 @@ public abstract class ClasspathHelper {
      *
      * @return the collection of URLs, not null
      */
-    public static Collection<URL> forResource(String resourceName, ClassLoader... classLoaders) {
-        final List<URL> result = new ArrayList<URL>();
+    public static Collection<URL> forResource(
+        String resourceName,
+        ClassLoader... classLoaders
+    ) {
+        final List<URL> result = new ArrayList<>();
         final ClassLoader[] loaders = classLoaders(classLoaders);
         for (ClassLoader classLoader : loaders) {
             try {
@@ -113,7 +116,11 @@ public abstract class ClasspathHelper {
                 }
             } catch (IOException e) {
                 if (Reflections.log != null) {
-                    Reflections.log.warn("error getting resources for " + resourceName, e);
+                    Reflections.log.warn(
+                        "error getting resources for {}",
+                        resourceName,
+                        e
+                    );
                 }
             }
         }
@@ -207,7 +214,7 @@ public abstract class ClasspathHelper {
      * @return the collection of URLs, not null
      */
     public static Collection<URL> forJavaClassPath() {
-        Collection<URL> urls = new ArrayList<URL>();
+        Collection<URL> urls = new ArrayList<>();
         String javaClassPath = System.getProperty("java.class.path");
         if (javaClassPath != null) {
             for (String path : javaClassPath.split(File.pathSeparator)) {
@@ -232,8 +239,10 @@ public abstract class ClasspathHelper {
      * 
      * @return the collection of URLs, not null
      */
-    public static Collection<URL> forWebInfLib(final ServletContext servletContext) {
-        final Collection<URL> urls = new ArrayList<URL>();
+    public static Collection<URL> forWebInfLib(
+        final ServletContext servletContext
+    ) {
+        final Collection<URL> urls = new ArrayList<>();
         Set<?> resourcePaths = servletContext.getResourcePaths("/WEB-INF/lib");
         if (resourcePaths == null) {
             return urls;
@@ -263,7 +272,9 @@ public abstract class ClasspathHelper {
             } else {
                 return servletContext.getResource("/WEB-INF/classes");
             }
-        } catch (MalformedURLException e) { /*fuck off*/ }
+        } catch (MalformedURLException e) {
+            /*fuck off*/
+        }
         return null;
     }
 
@@ -292,7 +303,7 @@ public abstract class ClasspathHelper {
      * @return the collection of URLs, not null
      */
     public static Collection<URL> forManifest(final URL url) {
-        final Collection<URL> result = new ArrayList<URL>();
+        final Collection<URL> result = new ArrayList<>();
         result.add(url);
         try {
             final String part = cleanPath(url);
@@ -334,7 +345,7 @@ public abstract class ClasspathHelper {
      * @return the collection of URLs, not null
      */
     public static Collection<URL> forManifest(final Iterable<URL> urls) {
-        Collection<URL> result = new ArrayList<URL>();
+        Collection<URL> result = new ArrayList<>();
         // determine if any of the URLs are JARs, and get any dependencies
         for (URL url : urls) {
             result.addAll(forManifest(url));
@@ -396,7 +407,7 @@ public abstract class ClasspathHelper {
 
     //http://michaelscharf.blogspot.co.il/2006/11/javaneturlequals-and-hashcode-make.html
     private static Collection<URL> distinctUrls(Collection<URL> urls) {
-        Map<String, URL> distinct = new LinkedHashMap<String, URL>(urls.size());
+        Map<String, URL> distinct = new LinkedHashMap<>(urls.size());
         for (URL url : urls) {
             distinct.put(url.toExternalForm(), url);
         }

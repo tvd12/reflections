@@ -10,6 +10,7 @@ import java.util.function.Function;
 
 import com.tvd12.reflections.util.FluentIterable;
 import com.tvd12.reflections.util.Iterators;
+import org.jspecify.annotations.NonNull;
 
 public class TsIterables {
 
@@ -17,7 +18,7 @@ public class TsIterables {
 	        final Function<? super F, ? extends T> function) {
 		return new FluentIterable<T>() {
 			@Override
-			public Iterator<T> iterator() {
+			public @NonNull Iterator<T> iterator() {
 				return Iterators.transform(fromIterable.iterator(), function);
 			}
 
@@ -44,7 +45,7 @@ public class TsIterables {
 	public static <T> Iterable<T> limit(final Iterable<T> iterable, final int limitSize) {
 		return new FluentIterable<T>() {
 			@Override
-			public Iterator<T> iterator() {
+			public @NonNull Iterator<T> iterator() {
 				return TsIterators.limit(iterable.iterator(), limitSize);
 			}
 

@@ -6,6 +6,8 @@ import java.util.Iterator;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 
+import javax.annotation.Nonnull;
+
 import com.tvd12.reflections.Reflections;
 import com.tvd12.reflections.util.AbstractIterator;
 
@@ -23,6 +25,7 @@ public class ZipDir implements Vfs.Dir {
 
     public Iterable<Vfs.File> getFiles() {
         return new Iterable<Vfs.File>() {
+            @Nonnull
             public Iterator<Vfs.File> iterator() {
                 return new AbstractIterator<Vfs.File>() {
                     final Enumeration<? extends ZipEntry> entries = jarFile.entries();

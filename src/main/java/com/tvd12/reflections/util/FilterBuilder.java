@@ -1,11 +1,11 @@
 package com.tvd12.reflections.util;
 
+import com.tvd12.reflections.ReflectionsException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-
-import com.tvd12.reflections.ReflectionsException;
 
 /**
  * Builds include/exclude filters for Reflections.
@@ -101,7 +101,7 @@ public class FilterBuilder implements Predicate<String> {
      * See also the more useful {@link FilterBuilder#parsePackages(String)} method.
      */
     public static FilterBuilder parse(String includeExcludeString) {
-        List<Predicate<String>> filters = new ArrayList<Predicate<String>>();
+        List<Predicate<String>> filters = new ArrayList<>();
 
         if (!Utils.isEmpty(includeExcludeString)) {
             for (String string : includeExcludeString.split(",")) {
@@ -142,14 +142,14 @@ public class FilterBuilder implements Predicate<String> {
      * The input strings "-java" and "-java." are equivalent.
      */
     public static FilterBuilder parsePackages(String includeExcludeString) {
-        List<Predicate<String>> filters = new ArrayList<Predicate<String>>();
+        List<Predicate<String>> filters = new ArrayList<>();
 
         if (!Utils.isEmpty(includeExcludeString)) {
             for (String string : includeExcludeString.split(",")) {
                 String trimmed = string.trim();
                 char prefix = trimmed.charAt(0);
                 String pattern = trimmed.substring(1);
-                if (pattern.endsWith(".") == false) {
+                if (!pattern.endsWith(".")) {
                   pattern += ".";
                 }
                 pattern = prefix(pattern);

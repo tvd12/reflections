@@ -7,6 +7,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nonnull;
+
 @SuppressWarnings("unchecked")
 public final class Sets {
 
@@ -43,6 +45,7 @@ public final class Sets {
 	
 	public static <E> SetView<E> difference(Set<E> a, Set<E> b) {
 		return new SetView<E>() {
+			@Nonnull
 			@Override
 			public Iterator<E> iterator() {
 				return new AbstractIterator<E>() {

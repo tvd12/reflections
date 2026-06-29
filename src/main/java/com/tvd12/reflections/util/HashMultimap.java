@@ -16,14 +16,9 @@ public class HashMultimap<K, V> extends AbstractMultimap<K, V> {
 	}
 
 	public static <K, V> HashMultimap<K, V> create() {
-		return new HashMultimap<K, V>(
-				new HashMap<>(),
-				new Supplier<Set<V>>() {
-					@Override
-					public Set<V> get() {
-						return new HashSet<>();
-					}
-				});
+		return new HashMultimap<>(
+            new HashMap<>(),
+            (Supplier<Set<V>>) HashSet::new
+		);
 	}
-	
 }
