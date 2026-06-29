@@ -173,6 +173,10 @@ public class Reflections {
         store = new Store(configuration);
     }
 
+    public static Reflections empty() {
+        return new Reflections();
+    }
+
     //
     protected void scan() {
         if (configuration.getUrls() == null || configuration.getUrls().isEmpty()) {

@@ -1,5 +1,6 @@
 package com.tvd12.reflections.util;
 
+import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -153,13 +154,19 @@ public abstract class Utils {
     @Nullable
     public static Logger findLogger(Class<?> aClass) {
         try {
-            // This is to check whether an optional SLF4J binding is available. While SLF4J recommends that libraries
-            // "should not declare a dependency on any SLF4J binding but only depend on slf4j-api", doing so forces
-            // users of the library to either add a binding to the classpath (even if just slf4j-nop) or to set the
-            // "slf4j.suppressInitError" system property in order to avoid the warning, which both is inconvenient.
+            // SLF4J 1.x: StaticLoggerBinder present means a real binding is active
             Class.forName("org.slf4j.impl.StaticLoggerBinder");
             return LoggerFactory.getLogger(aClass);
         } catch (Throwable e) {
+            // SLF4J 2.x: no StaticLoggerBinder; check if a real provider (not NOP) is bound
+            try {
+                ILoggerFactory factory = LoggerFactory.getILoggerFactory();
+                if (!factory.getClass().getName().contains("NOP")) {
+                    return LoggerFactory.getLogger(aClass);
+                }
+            } catch (Throwable ignored) {
+                // do nothing
+            }
             return null;
         }
     }

@@ -100,7 +100,11 @@ public class ConfigurationBuilder implements Configuration {
             }
             else if (param instanceof Class) {
                 if (Scanner.class.isAssignableFrom((Class) param)) {
-                    try { builder.addScanners(((Scanner) ((Class) param).newInstance())); } catch (Exception e) { /*fallback*/ }
+                    try {
+                        builder.addScanners(((Scanner) ((Class) param).getDeclaredConstructor().newInstance()));
+                    } catch (Exception e) {
+                        /*fallback*/
+                    }
                 }
                 builder.addUrls(ClasspathHelper.forClass((Class) param, classLoaders));
                 filter.includePackage(((Class) param));

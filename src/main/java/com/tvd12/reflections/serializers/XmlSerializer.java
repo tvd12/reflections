@@ -15,7 +15,6 @@ import com.tvd12.reflections.util.ConfigurationBuilder;
 import com.tvd12.reflections.util.Utils;
 
 import java.io.*;
-import java.lang.reflect.Constructor;
 
 /** serialization of Reflections to xml
  *
@@ -36,14 +35,7 @@ import java.lang.reflect.Constructor;
 public class XmlSerializer implements Serializer {
 
     public Reflections read(InputStream inputStream) {
-        Reflections reflections;
-        try {
-            Constructor<Reflections> constructor = Reflections.class.getDeclaredConstructor();
-            constructor.setAccessible(true);
-            reflections = constructor.newInstance();
-        } catch (Exception e) {
-            reflections = new Reflections(new ConfigurationBuilder());
-        }
+        Reflections reflections = Reflections.empty();
 
         try {
             Document document = new SAXReader().read(inputStream);

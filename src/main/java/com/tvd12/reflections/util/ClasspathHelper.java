@@ -176,7 +176,7 @@ public abstract class ClasspathHelper {
      * @return the collection of URLs, not null
      */
     public static Collection<URL> forClassLoader(ClassLoader... classLoaders) {
-        final Collection<URL> result = new ArrayList<URL>();
+        final Collection<URL> result = new ArrayList<>();
         final ClassLoader[] loaders = classLoaders(classLoaders);
         for (ClassLoader classLoader : loaders) {
             while (classLoader != null) {
@@ -188,6 +188,10 @@ public abstract class ClasspathHelper {
                 }
                 classLoader = classLoader.getParent();
             }
+        }
+        // Java 9+: AppClassLoader no longer extends URLClassLoader, fall back to java.class.path
+        if (result.isEmpty()) {
+            result.addAll(forJavaClassPath());
         }
         return distinctUrls(result);
     }
