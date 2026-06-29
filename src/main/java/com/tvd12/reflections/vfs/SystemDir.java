@@ -6,7 +6,8 @@ import com.tvd12.reflections.util.Lists;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
-import java.util.Stack;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 /*
  * An implementation of {@link com.tvd12.reflections.vfs.Vfs.Dir} for directory {@link java.io.File}.
@@ -34,12 +35,11 @@ public class SystemDir implements Vfs.Dir {
             return Collections.emptyList();
         }
         return () -> new AbstractIterator<Vfs.File>() {
-            final Stack<File> stack = new Stack<>();
-            {stack.addAll(listFiles(file));}
+            final Deque<File> stack = new ArrayDeque<>(listFiles(file));
 
             protected Vfs.File computeNext() {
                 while (!stack.isEmpty()) {
-                    final File file = stack.pop();
+                    final File file = stack.removeLast();
                     if (file.isDirectory()) {
                         stack.addAll(listFiles(file));
                     } else {
