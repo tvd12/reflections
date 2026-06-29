@@ -37,16 +37,19 @@ public final class Iterators {
 
 	public static <T> T getOnlyElement(Iterator<T> iterator) {
 		T first = iterator.next();
-		if (!iterator.hasNext())
+		if (!iterator.hasNext()) {
 			return first;
+		}
 
 		StringBuilder sb = new StringBuilder()
 			.append("expected one element but was: <")
 			.append(first);
-		for (int i = 0; i < 4 && iterator.hasNext(); i++)
+		for (int i = 0; i < 4 && iterator.hasNext(); i++) {
 			sb.append(", ").append(iterator.next());
-		if (iterator.hasNext())
+		}
+		if (iterator.hasNext()) {
 			sb.append(", ...");
+		}
 		sb.append('>');
 		throw new IllegalArgumentException(sb.toString());
 	}

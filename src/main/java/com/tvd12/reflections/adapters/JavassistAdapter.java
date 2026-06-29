@@ -1,6 +1,17 @@
 package com.tvd12.reflections.adapters;
 
-import javassist.bytecode.*;
+import com.tvd12.reflections.ReflectionsException;
+import com.tvd12.reflections.util.Joiner;
+import com.tvd12.reflections.util.Lists;
+import com.tvd12.reflections.util.Utils;
+import com.tvd12.reflections.vfs.Vfs;
+import javassist.bytecode.AccessFlag;
+import javassist.bytecode.AnnotationsAttribute;
+import javassist.bytecode.ClassFile;
+import javassist.bytecode.Descriptor;
+import javassist.bytecode.FieldInfo;
+import javassist.bytecode.MethodInfo;
+import javassist.bytecode.ParameterAnnotationsAttribute;
 import javassist.bytecode.annotation.Annotation;
 
 import java.io.BufferedInputStream;
@@ -9,12 +20,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
-
-import com.tvd12.reflections.ReflectionsException;
-import com.tvd12.reflections.util.Joiner;
-import com.tvd12.reflections.util.Lists;
-import com.tvd12.reflections.util.Utils;
-import com.tvd12.reflections.vfs.Vfs;
 
 import static javassist.bytecode.AccessFlag.isPrivate;
 import static javassist.bytecode.AccessFlag.isProtected;
@@ -110,7 +115,7 @@ public class JavassistAdapter implements MetadataAdapter<ClassFile, FieldInfo, M
         int accessFlags = method.getAccessFlags();
         return isPrivate(accessFlags) ? "private" :
                isProtected(accessFlags) ? "protected" :
-               isPublic(accessFlags) ? "public" : "";
+               AccessFlag.isPublic(accessFlags) ? "public" : "";
     }
 
     public String getMethodKey(ClassFile cls, MethodInfo method) {
