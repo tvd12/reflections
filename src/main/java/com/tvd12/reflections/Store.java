@@ -25,14 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Store {
 
-    private transient boolean concurrent;
+    private final transient boolean concurrent;
     private final Map<String, Multimap<String, String>> storeMap;
-
-    //used via reflection
-    protected Store() {
-        storeMap = new HashMap<>();
-        concurrent = false;
-    }
 
     public Store(Configuration configuration) {
         storeMap = new HashMap<>();
