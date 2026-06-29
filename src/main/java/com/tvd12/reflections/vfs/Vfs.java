@@ -269,7 +269,8 @@ public abstract class Vfs {
             }
 
             public Dir createDir(final URL url) throws Exception {
-                return new ZipDir(new JarFile(getFile(url)));
+                java.io.File file = getFile(url);
+                return file != null ? new ZipDir(new JarFile(file)) : null;
             }
         },
 
