@@ -102,10 +102,11 @@ public abstract class ClasspathHelper {
                 final Enumeration<URL> urls = classLoader.getResources(resourceName);
                 while (urls.hasMoreElements()) {
                     final URL url = urls.nextElement();
-                    int index = url.toExternalForm().lastIndexOf(resourceName);
+                    final String externalForm = url.toExternalForm();
+                    int index = externalForm.lastIndexOf(resourceName);
                     if (index != -1) {
                     	// Add old url as contextUrl to support exotic url handlers
-                        result.add(new URL(url, url.toExternalForm().substring(0, index)));
+                        result.add(new URL(url, externalForm.substring(0, index)));
                     } else {
                         result.add(url);
                     }

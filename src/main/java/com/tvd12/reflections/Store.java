@@ -1,21 +1,21 @@
 package com.tvd12.reflections;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
-
 import com.tvd12.reflections.util.Iterables;
 import com.tvd12.reflections.util.Lists;
 import com.tvd12.reflections.util.Multimap;
 import com.tvd12.reflections.util.Multimaps;
 import com.tvd12.reflections.util.SetMultimap;
 import com.tvd12.reflections.util.Sets;
+
+import javax.annotation.Nonnull;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * stores metadata information in multimaps
@@ -30,12 +30,12 @@ public class Store {
 
     //used via reflection
     protected Store() {
-        storeMap = new HashMap<String, Multimap<String, String>>();
+        storeMap = new HashMap<>();
         concurrent = false;
     }
 
     public Store(Configuration configuration) {
-        storeMap = new HashMap<String, Multimap<String, String>>();
+        storeMap = new HashMap<>();
         concurrent = configuration.getExecutorService() != null;
     }
 
@@ -49,12 +49,10 @@ public class Store {
         Multimap<String, String> mmap = storeMap.get(index);
         if (mmap == null) {
             SetMultimap<String, String> multimap =
-                    Multimaps.newSetMultimap(new HashMap<String, Collection<String>>(),
-                            new Supplier<Set<String>>() {
-                                public Set<String> get() {
-                                    return Sets.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
-                                }
-                            });
+                Multimaps.newSetMultimap(
+                    new HashMap<>(),
+                    () -> Sets.newSetFromMap(new ConcurrentHashMap<>())
+                );
             mmap = concurrent ? Multimaps.synchronizedSetMultimap(multimap) : multimap;
             storeMap.put(index,mmap);
         }
@@ -78,7 +76,7 @@ public class Store {
     /** get the values stored for the given {@code index} and {@code keys} */
     public Iterable<String> get(String index, Iterable<String> keys) {
         Multimap<String, String> mmap = get(index);
-        IterableChain<String> result = new IterableChain<String>();
+        IterableChain<String> result = new IterableChain<>();
         for (String key : keys) {
             result.addAll(mmap.get(key));
         }
@@ -86,12 +84,18 @@ public class Store {
     }
 
     /** recursively get the values stored for the given {@code index} and {@code keys}, including keys */
-    private Iterable<String> getAllIncluding(String index, Iterable<String> keys, IterableChain<String> result) {
+    private Iterable<String> getAllIncluding(
+        String index,
+        Iterable<String> keys,
+        IterableChain<String> result, Set<String> visited
+    ) {
         result.addAll(keys);
         for (String key : keys) {
-            Iterable<String> values = get(index, key);
-            if (values.iterator().hasNext()) {
-                getAllIncluding(index, values, result);
+            if (visited.add(key)) {
+                Iterable<String> values = get(index, key);
+                if (!Iterables.isEmpty(values)) {
+                    getAllIncluding(index, values, result, visited);
+                }
             }
         }
         return result;
@@ -99,14 +103,14 @@ public class Store {
 
     /** recursively get the values stored for the given {@code index} and {@code keys}, not including keys */
     public Iterable<String> getAll(String index, String key) {
-        return getAllIncluding(index, get(index, key), new IterableChain<String>());
+        return getAllIncluding(index, get(index, key), new IterableChain<>(), new HashSet<>());
     }
 
     /** recursively get the values stored for the given {@code index} and {@code keys}, not including keys */
     public Iterable<String> getAll(String index, Iterable<String> keys) {
-    		Iterable<String> storedValues = get(index, keys);
-    		IterableChain<String> result = new IterableChain<String>();
-        return getAllIncluding(index, storedValues, result);
+        Iterable<String> storedValues = get(index, keys);
+        IterableChain<String> result = new IterableChain<>();
+        return getAllIncluding(index, storedValues, result, new HashSet<>());
     }
 
     @SuppressWarnings("unchecked")
@@ -115,6 +119,9 @@ public class Store {
 
         private void addAll(Iterable<T> iterable) { chain.add(iterable); }
 
-        public Iterator<T> iterator() { return Iterables.concat(chain).iterator(); }
+        @Nonnull
+        public Iterator<T> iterator() {
+            return Iterables.concat(chain).iterator();
+        }
     }
 }

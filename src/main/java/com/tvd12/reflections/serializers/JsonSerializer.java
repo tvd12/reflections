@@ -68,7 +68,7 @@ public class JsonSerializer implements Serializer {
                             });
                             for (Map.Entry<String, JsonElement> entry : ((JsonObject) jsonElement).entrySet()) {
                                 for (JsonElement element : (JsonArray) entry.getValue()) {
-                                    map.get(entry.getKey()).add(element.getAsString());
+                                    map.put(entry.getKey(), element.getAsString());
                                 }
                             }
                             return map;
