@@ -286,23 +286,27 @@ public abstract class ClasspathHelper {
      * 
      * @return the collection of URLs, not null
      */
-    @SuppressWarnings("resource")
-	public static Collection<URL> forManifest(final URL url) {
+    public static Collection<URL> forManifest(final URL url) {
         final Collection<URL> result = new ArrayList<URL>();
         result.add(url);
         try {
             final String part = cleanPath(url);
             File jarFile = new File(part);
-            JarFile myJar = new JarFile(part);
-            URL validUrl = tryToGetValidUrl(jarFile.getPath(), new File(part).getParent(), part);
-            if (validUrl != null) { result.add(validUrl); }
-            final Manifest manifest = myJar.getManifest();
-            if (manifest != null) {
-                final String classPath = manifest.getMainAttributes().getValue(new Attributes.Name("Class-Path"));
-                if (classPath != null) {
-                    for (String jar : classPath.split(" ")) {
-                        validUrl = tryToGetValidUrl(jarFile.getPath(), new File(part).getParent(), jar);
-                        if (validUrl != null) { result.add(validUrl); }
+            try (JarFile myJar = new JarFile(part)) {
+                URL validUrl = tryToGetValidUrl(jarFile.getPath(), new File(part).getParent(), part);
+                if (validUrl != null) {
+                    result.add(validUrl);
+                }
+                final Manifest manifest = myJar.getManifest();
+                if (manifest != null) {
+                    final String classPath = manifest.getMainAttributes().getValue(new Attributes.Name("Class-Path"));
+                    if (classPath != null) {
+                        for (String jar : classPath.split(" ")) {
+                            validUrl = tryToGetValidUrl(jarFile.getPath(), new File(part).getParent(), jar);
+                            if (validUrl != null) {
+                                result.add(validUrl);
+                            }
+                        }
                     }
                 }
             }

@@ -230,18 +230,18 @@ public abstract class ReflectionUtils {
 
     /** where element is annotated with given {@code annotations}, including member matching */
     public static <T extends AnnotatedElement> Predicate<T> withAnnotations(final Annotation... annotations) {
-        return new Predicate<T>() {
-            public boolean test(T input) {
-                if (input != null) {
-                    Annotation[] inputAnnotations = input.getAnnotations();
-                    if (inputAnnotations.length == annotations.length) {
-                        for (int i = 0; i < inputAnnotations.length; i++) {
-                            if (!areAnnotationMembersMatching(inputAnnotations[i], annotations[i])) return false;
-                        }
-                    }
-                }
-                return true;
+        return input -> {
+            if (input == null) {
+                return false;
             }
+            Annotation[] inputAnnotations = input.getAnnotations();
+            if (inputAnnotations.length != annotations.length) {
+                return false;
+            }
+            for (int i = 0; i < inputAnnotations.length; i++) {
+                if (!areAnnotationMembersMatching(inputAnnotations[i], annotations[i])) return false;
+            }
+            return true;
         };
     }
 
@@ -444,7 +444,9 @@ public abstract class ReflectionUtils {
         Annotation[][] annotations =
                 member instanceof Method ? ((Method) member).getParameterAnnotations() :
                 member instanceof Constructor ? ((Constructor) member).getParameterAnnotations() : null;
-        for (Annotation[] annotation : annotations) Collections.addAll(result, annotation);
+        if (annotations != null) {
+            for (Annotation[] annotation : annotations) Collections.addAll(result, annotation);
+        }
         return result;
     }
 

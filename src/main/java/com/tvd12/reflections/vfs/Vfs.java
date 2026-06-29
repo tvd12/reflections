@@ -10,7 +10,6 @@ import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.jar.JarFile;
@@ -143,24 +142,54 @@ public abstract class Vfs {
 
     /** return an iterable of all {@link com.tvd12.reflections.vfs.Vfs.File} in given urls, matching filePredicate */
     public static Iterable<File> findFiles(final Collection<URL> inUrls, final Predicate<File> filePredicate) {
-        Iterable<File> result = new ArrayList<File>();
+        List<File> result = new ArrayList<File>();
 
         for (final URL url : inUrls) {
+            Dir dir = null;
             try {
-                result = Iterables.concat(result,
-                        Iterables.filter(new Iterable<File>() {
-                            public Iterator<File> iterator() {
-                                return fromURL(url).getFiles().iterator();
-                            }
-                        }, filePredicate));
+                dir = fromURL(url);
+                for (final File file : dir.getFiles()) {
+                    if (filePredicate.test(file)) {
+                        result.add(toMemoryFile(file));
+                    }
+                }
             } catch (Throwable e) {
                 if (Reflections.log != null) {
                     Reflections.log.warn("could not findFiles for url. continuing. [" + url + "]", e);
+                }
+            } finally {
+                if (dir != null) {
+                    dir.close();
                 }
             }
         }
 
         return result;
+    }
+
+    private static File toMemoryFile(final File file) {
+        final String name = file.getName();
+        final String relativePath = file.getRelativePath();
+        final byte[] bytes;
+        try {
+            InputStream is = file.openInputStream();
+            try {
+                java.io.ByteArrayOutputStream buf = new java.io.ByteArrayOutputStream();
+                byte[] tmp = new byte[4096];
+                int n;
+                while ((n = is.read(tmp)) != -1) buf.write(tmp, 0, n);
+                bytes = buf.toByteArray();
+            } finally {
+                is.close();
+            }
+        } catch (IOException e) {
+            throw new ReflectionsException("could not read file " + relativePath, e);
+        }
+        return new File() {
+            public String getName() { return name; }
+            public String getRelativePath() { return relativePath; }
+            public InputStream openInputStream() { return new java.io.ByteArrayInputStream(bytes); }
+        };
     }
 
     /**try to get {@link java.io.File} from url*/

@@ -289,7 +289,9 @@ public class Reflections {
         Serializer serializer = optionalSerializer != null && optionalSerializer.length == 1 ? optionalSerializer[0] : new XmlSerializer();
 
         Collection<URL> urls = ClasspathHelper.forPackage(packagePrefix);
-        if (urls.isEmpty()) return null;
+        if (urls.isEmpty()) {
+            return new Reflections();
+        }
         long start = System.currentTimeMillis();
         final Reflections reflections = new Reflections();
         Iterable<Vfs.File> files = Vfs.findFiles(urls, packagePrefix, resourceNameFilter);

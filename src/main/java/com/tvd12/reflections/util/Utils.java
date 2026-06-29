@@ -136,7 +136,7 @@ public abstract class Utils {
 
         try {
             return forName(className, classLoaders).getDeclaredField(fieldName);
-        } catch (NoSuchFieldException e) {
+        } catch (Throwable e) {
             throw new ReflectionsException("Can't resolve field named " + fieldName, e);
         }
     }
