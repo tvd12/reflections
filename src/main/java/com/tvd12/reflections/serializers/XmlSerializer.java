@@ -1,5 +1,9 @@
 package com.tvd12.reflections.serializers;
 
+import com.tvd12.reflections.Reflections;
+import com.tvd12.reflections.ReflectionsException;
+import com.tvd12.reflections.Store;
+import com.tvd12.reflections.util.Utils;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentFactory;
@@ -8,13 +12,11 @@ import org.dom4j.io.OutputFormat;
 import org.dom4j.io.SAXReader;
 import org.dom4j.io.XMLWriter;
 
-import com.tvd12.reflections.Reflections;
-import com.tvd12.reflections.ReflectionsException;
-import com.tvd12.reflections.Store;
-import com.tvd12.reflections.util.ConfigurationBuilder;
-import com.tvd12.reflections.util.Utils;
-
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.nio.file.Files;
 
 /** serialization of Reflections to xml
  *
@@ -39,15 +41,15 @@ public class XmlSerializer implements Serializer {
 
         try {
             Document document = new SAXReader().read(inputStream);
-            for (Object e1 : document.getRootElement().elements()) {
-                Element index = (Element) e1;
-                for (Object e2 : index.elements()) {
-                    Element entry = (Element) e2;
-                    Element key = entry.element("key");
-                    Element values = entry.element("values");
-                    for (Object o3 : values.elements()) {
-                        Element value = (Element) o3;
-                        reflections.getStore().getOrCreate(index.getName()).put(key.getText(), value.getText());
+            for (Element e1 : document.getRootElement().elements()) {
+                for (Element e2 : e1.elements()) {
+                    Element key = e2.element("key");
+                    Element values = e2.element("values");
+                    for (Element o3 : values.elements()) {
+                        reflections
+                            .getStore()
+                            .getOrCreate(e1.getName())
+                            .put(key.getText(), o3.getText());
                     }
                 }
             }
@@ -62,11 +64,12 @@ public class XmlSerializer implements Serializer {
 
     public File save(final Reflections reflections, final String filename) {
         File file = Utils.prepareFile(filename);
-
-
         try {
             Document document = createDocument(reflections);
-            XMLWriter xmlWriter = new XMLWriter(new FileOutputStream(file), OutputFormat.createPrettyPrint());
+            XMLWriter xmlWriter = new XMLWriter(
+                Files.newOutputStream(file.toPath()),
+                OutputFormat.createPrettyPrint()
+            );
             xmlWriter.write(document);
             xmlWriter.close();
         } catch (IOException e) {
@@ -74,7 +77,6 @@ public class XmlSerializer implements Serializer {
         } catch (Throwable e) {
             throw new RuntimeException("Could not save to file " + filename + ". Make sure relevant dependencies exist on classpath.", e);
         }
-
         return file;
     }
 

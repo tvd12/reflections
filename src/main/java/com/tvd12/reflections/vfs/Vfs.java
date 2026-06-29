@@ -59,21 +59,29 @@ public abstract class Vfs {
 
     /** an abstract vfs dir */
     public interface Dir {
+
         String getPath();
+
         Iterable<File> getFiles();
+
         void close();
     }
 
     /** an abstract vfs file */
     public interface File {
+
         String getName();
+
         String getRelativePath();
+
         InputStream openInputStream() throws IOException;
     }
 
     /** a matcher and factory for a url */
     public interface UrlType {
+
         boolean matches(URL url) throws Exception;
+
         Dir createDir(URL url) throws Exception;
     }
 
@@ -118,10 +126,17 @@ public abstract class Vfs {
             }
         }
 
-        throw new ReflectionsException("could not create Vfs.Dir from url, no matching UrlType was found [" + url.toExternalForm() + "]\n" +
-                "either use fromURL(final URL url, final List<UrlType> urlTypes) or " +
-                "use the static setDefaultURLTypes(final List<UrlType> urlTypes) or addDefaultURLTypes(UrlType urlType) " +
-                "with your specialized UrlType.");
+        throw new ReflectionsException(
+            "could not create Vfs.Dir from url, " +
+                "no matching UrlType was found " +
+                "[" + url.toExternalForm() + "]\n" +
+                "either use fromURL(final URL url, " +
+                "final List<UrlType> urlTypes) or " +
+                "use the static setDefaultURLTypes(" +
+                "final List<UrlType> urlTypes) or " +
+                "addDefaultURLTypes(UrlType urlType) " +
+                "with your specialized UrlType."
+        );
     }
 
     /** tries to create a Dir from the given url, using the given urlTypes*/
@@ -196,12 +211,15 @@ public abstract class Vfs {
             throw new ReflectionsException("could not read file " + relativePath, e);
         }
         return new File() {
+
             public String getName() {
                 return name;
             }
+
             public String getRelativePath() {
                 return relativePath;
             }
+
             public InputStream openInputStream() {
                 return new java.io.ByteArrayInputStream(bytes);
             }
@@ -231,15 +249,29 @@ public abstract class Vfs {
 
         try {
             path = url.toExternalForm();
-            if (path.startsWith("jar:")) path = path.substring("jar:".length());
-            if (path.startsWith("wsjar:")) path = path.substring("wsjar:".length());
-            if (path.startsWith("file:")) path = path.substring("file:".length());
-            if (path.contains(".jar!")) path = path.substring(0, path.indexOf(".jar!") + ".jar".length());
-            if (path.contains(".war!")) path = path.substring(0, path.indexOf(".war!") + ".war".length());
-            if ((file = new java.io.File(path)).exists()) return file;
+            if (path.startsWith("jar:")) {
+                path = path.substring("jar:".length());
+            }
+            if (path.startsWith("wsjar:")) {
+                path = path.substring("wsjar:".length());
+            }
+            if (path.startsWith("file:")) {
+                path = path.substring("file:".length());
+            }
+            if (path.contains(".jar!")) {
+                path = path.substring(0, path.indexOf(".jar!") + ".jar".length());
+            }
+            if (path.contains(".war!")) {
+                path = path.substring(0, path.indexOf(".war!") + ".war".length());
+            }
+            if ((file = new java.io.File(path)).exists()) {
+                return file;
+            }
 
             path = path.replace("%20", " ");
-            if ((file = new java.io.File(path)).exists()) return file;
+            if ((file = new java.io.File(path)).exists()) {
+                return file;
+            }
 
         } catch (Exception e) {
             // do nothing
@@ -311,19 +343,34 @@ public abstract class Vfs {
             }
 
             public Vfs.Dir createDir(URL url) throws Exception {
-                Object content = url.openConnection().getContent();
-                Class<?> virtualFile = ClasspathHelper.contextClassLoader().loadClass("org.jboss.vfs.VirtualFile");
-                java.io.File physicalFile = (java.io.File) virtualFile.getMethod("getPhysicalFile").invoke(content);
-                String name = (String) virtualFile.getMethod("getName").invoke(content);
-                java.io.File file = new java.io.File(physicalFile.getParentFile(), name);
-                if (!file.exists() || !file.canRead()) file = physicalFile;
-                return file.isDirectory() ? new SystemDir(file) : new ZipDir(new JarFile(file));
+                Object content = url.openConnection()
+                    .getContent();
+                Class<?> virtualFile = ClasspathHelper
+                    .contextClassLoader()
+                    .loadClass("org.jboss.vfs.VirtualFile");
+                java.io.File physicalFile = (java.io.File) virtualFile
+                    .getMethod("getPhysicalFile")
+                    .invoke(content);
+                String name = (String) virtualFile
+                    .getMethod("getName")
+                    .invoke(content);
+                java.io.File file = new java.io.File(
+                    physicalFile.getParentFile(),
+                    name
+                );
+                if (!file.exists() || !file.canRead()) {
+                    file = physicalFile;
+                }
+                return file.isDirectory()
+                    ? new SystemDir(file)
+                    : new ZipDir(new JarFile(file));
             }
         },
 
         jboss_vfsfile {
             public boolean matches(URL url) throws Exception {
-                return "vfszip".equals(url.getProtocol()) || "vfsfile".equals(url.getProtocol());
+                return "vfszip".equals(url.getProtocol())
+                    || "vfsfile".equals(url.getProtocol());
             }
 
             public Dir createDir(URL url) {
@@ -337,8 +384,11 @@ public abstract class Vfs {
             }
 
             public Dir createDir(URL url) throws Exception {
-                return fromURL((URL) ClasspathHelper.contextClassLoader().
-                        loadClass("org.eclipse.core.runtime.FileLocator").getMethod("resolve", URL.class).invoke(null, url));
+                return fromURL((URL) ClasspathHelper
+                    .contextClassLoader()
+                    .loadClass("org.eclipse.core.runtime.FileLocator")
+                    .getMethod("resolve", URL.class)
+                    .invoke(null, url));
             }
         },
 

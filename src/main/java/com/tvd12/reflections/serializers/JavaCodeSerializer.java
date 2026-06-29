@@ -1,27 +1,5 @@
 package com.tvd12.reflections.serializers;
 
-import static com.tvd12.reflections.Reflections.log;
-import static com.tvd12.reflections.util.Utils.index;
-import static com.tvd12.reflections.util.Utils.prepareFile;
-import static com.tvd12.reflections.util.Utils.repeat;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.nio.charset.Charset;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Supplier;
-
 import com.tvd12.reflections.ReflectionUtils;
 import com.tvd12.reflections.Reflections;
 import com.tvd12.reflections.ReflectionsException;
@@ -33,6 +11,25 @@ import com.tvd12.reflections.util.Multimap;
 import com.tvd12.reflections.util.Multimaps;
 import com.tvd12.reflections.util.Sets;
 import com.tvd12.reflections.util.Utils;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.nio.charset.Charset;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
+import static com.tvd12.reflections.Reflections.log;
+import static com.tvd12.reflections.util.Utils.index;
+import static com.tvd12.reflections.util.Utils.prepareFile;
+import static com.tvd12.reflections.util.Utils.repeat;
 
 /** Serialization of Reflections to java code
  * <p> Serializes types and types elements into interfaces respectively to fully qualified name,
@@ -110,7 +107,7 @@ public class JavaCodeSerializer implements Serializer {
             sb.append("//generated using Reflections JavaCodeSerializer")
                     .append(" [").append(new Date()).append("]")
                     .append("\n");
-            if (packageName.length() != 0) {
+            if (!packageName.isEmpty()) {
                 sb.append("package ").append(packageName).append(";\n");
                 sb.append("\n");
             }
@@ -163,11 +160,11 @@ public class JavaCodeSerializer implements Serializer {
             //get fields and methods
             List<String> annotations = Lists.newArrayList();
             List<String> fields = Lists.newArrayList();
-            final Multimap<String,String> methods = Multimaps.newSetMultimap(new HashMap<String, Collection<String>>(), new Supplier<Set<String>>() {
-                public Set<String> get() {
-                    return Sets.newHashSet();
-                }
-            });
+            final Multimap<String,String> methods = Multimaps
+                .newSetMultimap(
+                    new HashMap<>(),
+                    Sets::newHashSet
+                );
 
             for (String element : reflections.getStore().get(index(TypeElementsScanner.class), fqn)) {
                 if (element.startsWith("@")) {
@@ -180,7 +177,7 @@ public class JavaCodeSerializer implements Serializer {
                         String params = element.substring(i1 + 1, element.indexOf(")"));
 
                         String paramsDescriptor = "";
-                        if (params.length() != 0) {
+                        if (!params.isEmpty()) {
                             paramsDescriptor = tokenSeparator + params.replace(dotSeparator, tokenSeparator).replace(", ", doubleSeparator).replace("[]", arrayDescriptor);
                         }
                         String normalized = name + paramsDescriptor;
@@ -300,8 +297,7 @@ public class JavaCodeSerializer implements Serializer {
             Class<?> declaringClass = annotation.getDeclaringClass().getDeclaringClass();
             Class<?> aClass = resolveClassOf(declaringClass);
             Class<? extends Annotation> aClass1 = (Class<? extends Annotation>) ReflectionUtils.forName(name);
-            Annotation annotation1 = aClass.getAnnotation(aClass1);
-            return annotation1;
+            return aClass1 != null ? aClass.getAnnotation(aClass1) : null;
         } catch (Exception e) {
             throw new ReflectionsException("could not resolve to annotation " + annotation.getName(), e);
         }

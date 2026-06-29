@@ -27,5 +27,4 @@ public final class Lists {
 	public static <T> LinkedList<T> newLinkedList() {
 		return new LinkedList<>();
 	}
-	
 }

@@ -4,10 +4,10 @@ import com.tvd12.reflections.util.AbstractIterator;
 import com.tvd12.reflections.util.Lists;
 
 import java.io.File;
-import java.util.Collections;
-import java.util.List;
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Deque;
+import java.util.List;
 
 /*
  * An implementation of {@link com.tvd12.reflections.vfs.Vfs.Dir} for directory {@link java.io.File}.
@@ -54,15 +54,12 @@ public class SystemDir implements Vfs.Dir {
 
     private static List<File> listFiles(final File file) {
         File[] files = file.listFiles();
-
-        if (files != null)
-            return Lists.newArrayList(files);
-        else
-            return Lists.newArrayList();
+        return files != null
+            ? Lists.newArrayList(files)
+            : Lists.newArrayList();
     }
 
-    public void close() {
-    }
+    public void close() {}
 
     @Override
     public String toString() {

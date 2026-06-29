@@ -32,45 +32,74 @@ public class MemberUsageScanner extends AbstractScanner {
 
     void scanMember(CtBehavior member) throws CannotCompileException {
         //key contains this$/val$ means local field/parameter closure
-        final String key = member.getDeclaringClass().getName() + "." + member.getMethodInfo().getName() +
-                "(" + parameterNames(member.getMethodInfo()) + ")"; //+ " #" + member.getMethodInfo().getLineNumber(0)
+        final String key = member.getDeclaringClass().getName() + "." +
+            member.getMethodInfo().getName() +
+            "(" + parameterNames(member.getMethodInfo()) + ")"; //+ " #" + member.getMethodInfo().getLineNumber(0)
         member.instrument(new ExprEditor() {
             @Override
-            public void edit(NewExpr e) throws CannotCompileException {
+            public void edit(NewExpr e) {
                 try {
-                    put(e.getConstructor().getDeclaringClass().getName() + "." + "<init>" +
-                            "(" + parameterNames(e.getConstructor().getMethodInfo()) + ")", e.getLineNumber(), key);
+                    put(
+                        e.getConstructor().getDeclaringClass().getName() +
+                            "." + "<init>" +
+                            "(" + parameterNames(e.getConstructor().getMethodInfo()) + ")",
+                        e.getLineNumber(),
+                        key);
                 } catch (NotFoundException e1) {
                     throw new ReflectionsException("Could not find new instance usage in " + key, e1);
                 }
             }
 
             @Override
-            public void edit(MethodCall m) throws CannotCompileException {
+            public void edit(MethodCall m) {
                 try {
-                    put(m.getMethod().getDeclaringClass().getName() + "." + m.getMethodName() +
-                            "(" + parameterNames(m.getMethod().getMethodInfo()) + ")", m.getLineNumber(), key);
+                    put(
+                        m.getMethod().getDeclaringClass().getName() +
+                            "." + m.getMethodName() +
+                            "(" + parameterNames(m.getMethod().getMethodInfo()) + ")",
+                        m.getLineNumber(),
+                        key
+                    );
                 } catch (NotFoundException e) {
-                    throw new ReflectionsException("Could not find member " + m.getClassName() + " in " + key, e);
+                    throw new ReflectionsException(
+                        "Could not find member " + m.getClassName() + " in " + key,
+                        e
+                    );
                 }
             }
 
             @Override
-            public void edit(ConstructorCall c) throws CannotCompileException {
+            public void edit(ConstructorCall c) {
                 try {
-                    put(c.getConstructor().getDeclaringClass().getName() + "." + "<init>" +
-                            "(" + parameterNames(c.getConstructor().getMethodInfo()) + ")", c.getLineNumber(), key);
+                    put(
+                        c.getConstructor().getDeclaringClass().getName() +
+                            "." + "<init>" +
+                            "(" + parameterNames(c.getConstructor().getMethodInfo()) + ")",
+                        c.getLineNumber(),
+                        key
+                    );
                 } catch (NotFoundException e) {
-                    throw new ReflectionsException("Could not find member " + c.getClassName() + " in " + key, e);
+                    throw new ReflectionsException(
+                        "Could not find member " + c.getClassName() + " in " + key,
+                        e
+                    );
                 }
             }
 
             @Override
-            public void edit(FieldAccess f) throws CannotCompileException {
+            public void edit(FieldAccess f) {
                 try {
-                    put(f.getField().getDeclaringClass().getName() + "." + f.getFieldName(), f.getLineNumber(), key);
+                    put(
+                        f.getField().getDeclaringClass().getName() +
+                            "." + f.getFieldName(),
+                        f.getLineNumber(),
+                        key
+                    );
                 } catch (NotFoundException e) {
-                    throw new ReflectionsException("Could not find member " + f.getFieldName() + " in " + key, e);
+                    throw new ReflectionsException(
+                        "Could not find member " + f.getFieldName() + " in " + key,
+                        e
+                    );
                 }
             }
         });
@@ -83,19 +112,24 @@ public class MemberUsageScanner extends AbstractScanner {
     }
 
     String parameterNames(MethodInfo info) {
-        return Joiner.on(", ").join(getMetadataAdapter().getParameterNames(info));
+        return Joiner.on(", ")
+            .join(getMetadataAdapter()
+                .getParameterNames(info));
     }
 
     private ClassPool getClassPool() {
         if (classPool == null) {
             synchronized (this) {
                 classPool = new ClassPool();
-                ClassLoader[] classLoaders = getConfiguration().getClassLoaders();
+                ClassLoader[] classLoaders =
+                    getConfiguration().getClassLoaders();
                 if (classLoaders == null) {
                     classLoaders = ClasspathHelper.classLoaders();
                 }
                 for (ClassLoader classLoader : classLoaders) {
-                    classPool.appendClassPath(new LoaderClassPath(classLoader));
+                    classPool.appendClassPath(
+                        new LoaderClassPath(classLoader)
+                    );
                 }
             }
         }

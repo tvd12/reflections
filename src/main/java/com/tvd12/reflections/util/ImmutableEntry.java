@@ -7,9 +7,9 @@ public class ImmutableEntry<K, V> implements Entry<K, V> {
 	private final V value;
 
 	public ImmutableEntry(K key, V value) {
-        this.key = key;
-        this.value = value;
-    }
+		this.key = key;
+		this.value = value;
+	}
 
 	@Override
 	public K getKey() {

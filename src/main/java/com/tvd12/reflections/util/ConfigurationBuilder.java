@@ -42,6 +42,7 @@ import java.util.function.Predicate;
 /*lazy*/ @SuppressWarnings("rawtypes")
 public class ConfigurationBuilder implements Configuration {
     @Nonnull private final Set<Scanner> scanners;
+    @SuppressWarnings("CollectionContainsUrl")
     @Nonnull private Set<URL> urls;
 	protected MetadataAdapter metadataAdapter;
     @Nullable private Predicate<String> inputsFilter;
@@ -249,7 +250,9 @@ public class ConfigurationBuilder implements Configuration {
     }
 
     /** sets the executor service used for scanning. */
-    public ConfigurationBuilder setExecutorService(@Nullable ExecutorService executorService) {
+    public ConfigurationBuilder setExecutorService(
+        @Nullable ExecutorService executorService
+    ) {
         this.executorService = executorService;
         return this;
     }
@@ -264,8 +267,14 @@ public class ConfigurationBuilder implements Configuration {
      * the executor service spawns daemon threads by default.
      * <p>default is ThreadPoolExecutor with a single core */
     public ConfigurationBuilder useParallelExecutor(final int availableProcessors) {
-        ThreadFactory factory = new ThreadFactoryBuilder().setDaemon(true).setNameFormat("com.tvd12.reflections-scanner-%d").build();
-        setExecutorService(Executors.newFixedThreadPool(availableProcessors, factory));
+        ThreadFactory factory = new ThreadFactoryBuilder()
+            .setDaemon(true)
+            .setNameFormat("com.tvd12.reflections-scanner-%d")
+            .build();
+        setExecutorService(
+            Executors.newFixedThreadPool(availableProcessors,
+                factory)
+        );
         return this;
     }
 

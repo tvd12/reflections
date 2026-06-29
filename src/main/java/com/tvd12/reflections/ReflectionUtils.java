@@ -36,7 +36,7 @@ import com.tvd12.reflections.util.Sets;
  *         <li>{@link #getAllMethods(Class, java.util.function.Predicate[])}
  *         <li>{@link #getAllConstructors(Class, java.util.function.Predicate[])}
  *     </ul>
- *     <p>and predicates included here all starts with "with", such as 
+ *     <p>and predicates included here all starts with "with", such as
  *     <ul>
  *         <li>{@link #withAnnotation(java.lang.annotation.Annotation)}
  *         <li>{@link #withModifier(int)}
@@ -49,15 +49,15 @@ import com.tvd12.reflections.util.Sets;
  *         <li>{@link #withReturnType(Class)}
  *         <li>{@link #withType(Class)}
  *         <li>{@link #withTypeAssignableTo}
- *     </ul> 
+ *     </ul>
  *
  *     <p><br>
  *      for example, getting all getters would be:
  *     <pre>
- *      Set&#60;Method> getters = getAllMethods(someClasses, 
+ *      Set&#60;Method> getters = getAllMethods(someClasses,
  *              Predicates.and(
- *                      withModifier(Modifier.PUBLIC), 
- *                      withPrefix("get"), 
+ *                      withModifier(Modifier.PUBLIC),
+ *                      withPrefix("get"),
  *                      withParametersCount(0)));
  *     </pre>
  * */
@@ -112,13 +112,13 @@ public abstract class ReflectionUtils {
         }
         return result;
     }
-    
+
     /** get all methods of given {@code type}, up the super class hierarchy, optionally filtered by {@code predicates} */
     public static List<Method> getAllMethodList(
         final Class<?> type,
         Predicate<? super Method>... predicates
     ) {
-    		List<Method> result = Lists.newArrayList();
+        List<Method> result = Lists.newArrayList();
         for (Class<?> t : getAllSuperTypes(type)) {
             result.addAll(getMethodList(t, predicates));
         }
@@ -134,7 +134,7 @@ public abstract class ReflectionUtils {
             ? t.getMethods()
             : t.getDeclaredMethods(), predicates);
     }
-    
+
     /** get methods of given {@code type}, optionally filtered by {@code predicates} */
     public static List<Method> getMethodList(
         Class<?> t,
@@ -146,7 +146,7 @@ public abstract class ReflectionUtils {
     }
 
     /** get all constructors of given {@code type}, up the super class hierarchy, optionally filtered by {@code predicates} */
-	public static Set<Constructor> getAllConstructors(
+    public static Set<Constructor> getAllConstructors(
         final Class<?> type,
         Predicate<? super Constructor>... predicates
     ) {
@@ -212,7 +212,11 @@ public abstract class ReflectionUtils {
         final Set<T> elements,
         Predicate<? super T>... predicates
     ) {
-        return isEmpty(predicates) ? elements : Sets.newHashSet(Iterables.filter(elements, Predicates.and(predicates)));
+        return isEmpty(predicates)
+            ? elements
+            : Sets.newHashSet(
+                Iterables.filter(elements, Predicates.and(predicates))
+           );
     }
 
     //predicates
@@ -268,9 +272,9 @@ public abstract class ReflectionUtils {
         return input -> input != null
             && input.isAnnotationPresent(annotation.annotationType())
             && areAnnotationMembersMatching(
-                input.getAnnotation(annotation.annotationType()),
-                annotation
-            );
+            input.getAnnotation(annotation.annotationType()),
+            annotation
+        );
     }
 
     /** where element is annotated with given {@code annotations}, including member matching */
@@ -286,7 +290,12 @@ public abstract class ReflectionUtils {
                 return false;
             }
             for (int i = 0; i < inputAnnotations.length; i++) {
-                if (!areAnnotationMembersMatching(inputAnnotations[i], annotations[i])) return false;
+                if (!areAnnotationMembersMatching(
+                    inputAnnotations[i],
+                    annotations[i])
+                ) {
+                    return false;
+                }
             }
             return true;
         };
@@ -317,7 +326,8 @@ public abstract class ReflectionUtils {
     public static Predicate<Member> withParametersCount(
         final int count
     ) {
-        return input -> input != null && parameterTypes(input).length == count;
+        return input -> input != null
+            && parameterTypes(input).length == count;
     }
 
     /** when method/constructor has any parameter with an annotation matches given {@code annotations} */
@@ -492,12 +502,12 @@ public abstract class ReflectionUtils {
         Member member
     ) {
         return member != null ?
-                member.getClass() == Method.class
-                    ? ((Method) member).getParameterTypes()
-                    : member.getClass() == Constructor.class
-                        ? ((Constructor) member).getParameterTypes()
-                        : null
-                    : null;
+            member.getClass() == Method.class
+                ? ((Method) member).getParameterTypes()
+                : member.getClass() == Constructor.class
+                ? ((Constructor) member).getParameterTypes()
+                : null
+            : null;
     }
 
     private static Set<Annotation> parameterAnnotations(
@@ -505,11 +515,11 @@ public abstract class ReflectionUtils {
     ) {
         Set<Annotation> result = Sets.newHashSet();
         Annotation[][] annotations =
-                member instanceof Method
-                    ? ((Method) member).getParameterAnnotations()
-                    : member instanceof Constructor
-                        ? ((Constructor) member).getParameterAnnotations()
-                        : null;
+            member instanceof Method
+                ? ((Method) member).getParameterAnnotations()
+                : member instanceof Constructor
+                ? ((Constructor) member).getParameterAnnotations()
+                : null;
         if (annotations != null) {
             for (Annotation[] annotation : annotations) {
                 Collections.addAll(result, annotation);
@@ -573,11 +583,11 @@ public abstract class ReflectionUtils {
         return isEmpty(predicates)
             ? Sets.newHashSet(elements)
             : Sets.newHashSet(
-                Iterables.filter(
-                    Arrays.asList(elements),
-                    Predicates.and(predicates)
-                )
-            );
+            Iterables.filter(
+                Arrays.asList(elements),
+                Predicates.and(predicates)
+            )
+        );
     }
 
     static <T> Set<T> filter(
@@ -587,10 +597,10 @@ public abstract class ReflectionUtils {
         return isEmpty(predicates)
             ? Sets.newHashSet(elements)
             : Sets.newHashSet(
-                Iterables.filter(elements, Predicates.and(predicates))
+            Iterables.filter(elements, Predicates.and(predicates))
         );
     }
-    
+
     static <T> List<T> filterToList(
         final T[] elements,
         Predicate<? super T>... predicates
@@ -598,11 +608,11 @@ public abstract class ReflectionUtils {
         return isEmpty(predicates)
             ? Lists.newArrayList(elements)
             : Lists.newArrayList(
-                Iterables.filter(
-                    Arrays.asList(elements),
-                    Predicates.and(predicates)
-                )
-            );
+            Iterables.filter(
+                Arrays.asList(elements),
+                Predicates.and(predicates)
+            )
+        );
     }
 
     private static boolean areAnnotationMembersMatching(

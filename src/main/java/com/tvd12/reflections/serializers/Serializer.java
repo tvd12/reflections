@@ -7,6 +7,7 @@ import com.tvd12.reflections.Reflections;
 
 /** Serilizer of a {@link com.tvd12.reflections.Reflections} instance */
 public interface Serializer {
+
     /** reads the input stream into a new Reflections instance, populating it's store */
     Reflections read(InputStream inputStream);
 

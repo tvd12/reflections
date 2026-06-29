@@ -10,10 +10,12 @@ import java.util.function.Predicate;
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public final class Iterators {
 
-	private Iterators() {
-	}
+	private Iterators() {}
 
-	public static Iterator filter(Iterator unfiltered, Predicate retainIfTrue) {
+	public static Iterator filter(
+		Iterator unfiltered,
+		Predicate retainIfTrue
+	) {
 		return new AbstractIterator() {
 			@Override
 			protected Object computeNext() {
@@ -27,8 +29,10 @@ public final class Iterators {
 		};
 	}
 
-	public static <T> Iterator<T> concat(Iterator<? extends Iterator<? extends T>> inputs) {
-		return new ConcatenatedIterator<T>(inputs);
+	public static <T> Iterator<T> concat(
+		Iterator<? extends Iterator<? extends T>> inputs
+	) {
+		return new ConcatenatedIterator<>(inputs);
 	}
 
 	public static <T> T getOnlyElement(Iterator<T> iterator) {
@@ -36,7 +40,9 @@ public final class Iterators {
 		if (!iterator.hasNext())
 			return first;
 
-		StringBuilder sb = new StringBuilder().append("expected one element but was: <").append(first);
+		StringBuilder sb = new StringBuilder()
+			.append("expected one element but was: <")
+			.append(first);
 		for (int i = 0; i < 4 && iterator.hasNext(); i++)
 			sb.append(", ").append(iterator.next());
 		if (iterator.hasNext())
@@ -53,8 +59,11 @@ public final class Iterators {
 		return (UnmodifiableListIterator<T>) ArrayItr.EMPTY;
 	}
 
-	private static final class ArrayItr<T> extends AbstractIndexedListIterator<T> {
-		static final AbstractIndexedListIterator<Object> EMPTY = new ArrayItr<>(new Object[0], 0, 0, 0);
+	private static final class ArrayItr<T>
+		extends AbstractIndexedListIterator<T> {
+
+		static final AbstractIndexedListIterator<Object> EMPTY =
+			new ArrayItr<>(new Object[0], 0, 0, 0);
 
 		private final T[] array;
 		private final int offset;
@@ -72,12 +81,15 @@ public final class Iterators {
 	}
 
 	private static class ConcatenatedIterator<T> implements Iterator<T> {
+
 		private Iterator<? extends T> toRemove;
 		private Iterator<? extends T> iterator;
 		private Iterator<? extends Iterator<? extends T>> topMetaIterator;
 		private Deque<Iterator<? extends Iterator<? extends T>>> metaIterators;
 
-		ConcatenatedIterator(Iterator<? extends Iterator<? extends T>> metaIterator) {
+		ConcatenatedIterator(
+			Iterator<? extends Iterator<? extends T>> metaIterator
+		) {
 			iterator = emptyIterator();
 			topMetaIterator = metaIterator;
 		}
@@ -104,7 +116,8 @@ public final class Iterators {
 				iterator = topMetaIterator.next();
 
 				if (iterator instanceof ConcatenatedIterator) {
-					ConcatenatedIterator<T> topConcat = (ConcatenatedIterator<T>) iterator;
+					ConcatenatedIterator<T> topConcat =
+						(ConcatenatedIterator<T>) iterator;
 					iterator = topConcat.iterator;
 					if (this.metaIterators == null) {
 						this.metaIterators = new ArrayDeque<>();
@@ -112,7 +125,8 @@ public final class Iterators {
 					this.metaIterators.addFirst(this.topMetaIterator);
 					if (topConcat.metaIterators != null) {
 						while (!topConcat.metaIterators.isEmpty()) {
-							this.metaIterators.addFirst(topConcat.metaIterators.removeLast());
+							this.metaIterators
+								.addFirst(topConcat.metaIterators.removeLast());
 						}
 					}
 					this.topMetaIterator = topConcat.topMetaIterator;
@@ -138,8 +152,10 @@ public final class Iterators {
 		}
 	}
 
-	public static <F, T> Iterator<T> transform(final Iterator<F> fromIterator,
-	        final Function<? super F, ? extends T> function) {
+	public static <F, T> Iterator<T> transform(
+		final Iterator<F> fromIterator,
+		final Function<? super F, ? extends T> function
+	) {
 		return new TransformedIterator<F, T>(fromIterator) {
 			@Override
 			T transform(F from) {
@@ -147,5 +163,4 @@ public final class Iterators {
 			}
 		};
 	}
-
 }

@@ -193,8 +193,11 @@ public abstract class Utils {
     }
 
     public static void close(InputStream closeable) {
-        try { if (closeable != null) closeable.close(); }
-        catch (IOException e) {
+        try {
+            if (closeable != null) {
+                closeable.close();
+            }
+        } catch (IOException e) {
             if (Reflections.log != null) {
                 Reflections.log.warn("Could not close InputStream", e);
             }
@@ -241,7 +244,9 @@ public abstract class Utils {
 
     public static List<String> names(Iterable<Class<?>> types) {
         List<String> result = new ArrayList<>();
-        for (Class<?> type : types) result.add(name(type));
+        for (Class<?> type : types) {
+            result.add(name(type));
+        }
         return result;
     }
 
@@ -261,5 +266,7 @@ public abstract class Utils {
         return field.getDeclaringClass().getName() + "." + field.getName();
     }
 
-    public static String index(Class<? extends Scanner> scannerClass) { return scannerClass.getSimpleName(); }
+    public static String index(Class<? extends Scanner> scannerClass) {
+        return scannerClass.getSimpleName();
+    }
 }
