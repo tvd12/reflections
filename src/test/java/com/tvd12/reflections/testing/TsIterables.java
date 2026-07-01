@@ -54,8 +54,9 @@ public class TsIterables {
 				int index = 0;
 				List<T> list = new ArrayList<>();
 				for(T t : iterable) {
-					if(index < limitSize)
+					if(index < limitSize) {
 						list.add(t);
+					}
 				}
 				return list.spliterator();
 			}

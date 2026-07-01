@@ -217,7 +217,9 @@ public class Reflections {
     //
     protected void scan() {
         if (configuration.getUrls() == null || configuration.getUrls().isEmpty()) {
-            if (log != null) log.warn("given scan urls are empty. set urls in the configuration");
+            if (log != null) {
+                log.warn("given scan urls are empty. set urls in the configuration");
+            }
             return;
         }
 

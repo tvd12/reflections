@@ -82,15 +82,31 @@ public class ConfigurationBuilder implements Configuration {
         if (params != null) {
             for (Object param : params) {
                 if (param != null) {
-                    if (param.getClass().isArray()) { for (Object p : (Object[]) param) if (p != null) parameters.add(p); }
-                    else if (param instanceof Iterable) { for (Object p : (Iterable) param) if (p != null) parameters.add(p); }
-                    else parameters.add(param);
+                    if (param.getClass().isArray()) {
+                        for (Object p : (Object[]) param) {
+                            if (p != null) {
+                                parameters.add(p);
+                            }
+                        }
+                    } else if (param instanceof Iterable) {
+                        for (Object p : (Iterable) param) {
+                            if (p != null) {
+                                parameters.add(p);
+                            }
+                        }
+                    } else {
+                        parameters.add(param);
+                    }
                 }
             }
         }
 
         List<ClassLoader> loaders = Lists.newArrayList();
-        for (Object param : parameters) if (param instanceof ClassLoader) loaders.add((ClassLoader) param);
+        for (Object param : parameters) {
+            if (param instanceof ClassLoader) {
+                loaders.add((ClassLoader) param);
+            }
+        }
 
         ClassLoader[] classLoaders = loaders.isEmpty()
             ? new ClassLoader[0]
@@ -210,13 +226,15 @@ public class ConfigurationBuilder implements Configuration {
      * if javassist library exists in the classpath, this method returns {@link JavassistAdapter} otherwise defaults to {@link JavaReflectionAdapter}.
      * <p>the {@link JavassistAdapter} is preferred in terms of performance and class loading. */
     public MetadataAdapter getMetadataAdapter() {
-        if (metadataAdapter != null) return metadataAdapter;
-        else {
+        if (metadataAdapter != null) {
+            return metadataAdapter;
+        } else {
             try {
                 return (metadataAdapter = new JavassistAdapter());
             } catch (Throwable e) {
-                if (Reflections.log != null)
+                if (Reflections.log != null) {
                     Reflections.log.warn("could not create JavassistAdapter, using JavaReflectionAdapter", e);
+                }
                 return (metadataAdapter = new JavaReflectionAdapter());
             }
         }

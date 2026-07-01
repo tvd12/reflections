@@ -206,7 +206,9 @@ public final class ReflectionUtils {
         Predicate<? super Field>... predicates
     ) {
         Set<Field> result = Sets.newHashSet();
-        for (Class<?> t : getAllSuperTypes(type)) result.addAll(getFields(t, predicates));
+        for (Class<?> t : getAllSuperTypes(type)) {
+            result.addAll(getFields(t, predicates));
+        }
         return result;
     }
 
@@ -575,7 +577,9 @@ public final class ReflectionUtils {
         Annotation[] annotations
     ) {
         Class<? extends Annotation>[] result = new Class[annotations.length];
-        for (int i = 0; i < annotations.length; i++) result[i] = annotations[i].annotationType();
+        for (int i = 0; i < annotations.length; i++) {
+            result[i] = annotations[i].annotationType();
+        }
         return result;
     }
 
@@ -641,10 +645,10 @@ public final class ReflectionUtils {
         return isEmpty(predicates)
             ? Lists.newArrayList(elements)
             : Lists.newArrayList(
-            Iterables.filter(
-                Arrays.asList(elements),
-                Predicates.and(predicates)
-            )
+                Iterables.filter(
+                    Arrays.asList(elements),
+                    Predicates.and(predicates)
+                )
         );
     }
 

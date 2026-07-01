@@ -111,7 +111,9 @@ public abstract class Vfs {
             try {
                 if (type.matches(url)) {
                     Dir dir = type.createDir(url);
-                    if (dir != null) return dir;
+                    if (dir != null) {
+                        return dir;
+                    }
                 }
             } catch (Throwable e) {
                 if (Reflections.log != null) {
@@ -233,15 +235,21 @@ public abstract class Vfs {
 
         try {
             path = url.toURI().getSchemeSpecificPart();
-            if ((file = new java.io.File(path)).exists()) return file;
+            if ((file = new java.io.File(path)).exists()) {
+                return file;
+            }
         } catch (URISyntaxException e) {
             // do nothing
         }
 
         try {
             path = URLDecoder.decode(url.getPath(), "UTF-8");
-            if (path.contains(".jar!")) path = path.substring(0, path.lastIndexOf(".jar!") + ".jar".length());
-            if ((file = new java.io.File(path)).exists()) return file;
+            if (path.contains(".jar!")) {
+                path = path.substring(0, path.lastIndexOf(".jar!") + ".jar".length());
+            }
+            if ((file = new java.io.File(path)).exists()) {
+                return file;
+            }
 
         } catch (UnsupportedEncodingException e) {
             // do nothing

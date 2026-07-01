@@ -125,7 +125,9 @@ public class JavaCodeSerializer implements Serializer {
 
     public String toString(Reflections reflections) {
         if (reflections.getStore().get(index(TypeElementsScanner.class)).isEmpty()) {
-            if (log != null) log.warn("JavaCodeSerializer needs TypeElementsScanner configured");
+            if (log != null) {
+                log.warn("JavaCodeSerializer needs TypeElementsScanner configured");
+            }
         }
 
         StringBuilder sb = new StringBuilder();

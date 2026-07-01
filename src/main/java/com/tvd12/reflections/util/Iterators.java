@@ -21,8 +21,9 @@ public final class Iterators {
 			protected Object computeNext() {
 				while (unfiltered.hasNext()) {
 					Object element = unfiltered.next();
-					if (retainIfTrue.test(element))
+					if (retainIfTrue.test(element)) {
 						return element;
+					}
 				}
 				return endOfData();
 			}

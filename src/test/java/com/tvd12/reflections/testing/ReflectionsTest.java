@@ -350,7 +350,9 @@ public class ReflectionsTest {
         return new Match<Set<Class<?>>>() {
             public boolean matches(Object o) {
                 for (Class<?> c : (Iterable<Class<?>>) o) {
-                    if (!TsIterables.contains(annotationTypes(Arrays.asList(c.getAnnotations())), annotation)) return false;
+                    if (!TsIterables.contains(annotationTypes(Arrays.asList(c.getAnnotations())), annotation)) {
+                        return false;
+                    }
                 }
                 return true;
             }
@@ -369,11 +371,15 @@ public class ReflectionsTest {
                         Class next = stack.remove(0);
                         if (result.add(next)) {
                             for (Class<? extends Annotation> ac : annotationTypes(Arrays.asList(next.getDeclaredAnnotations()))) {
-                                if (!result.contains(ac) && !stack.contains(ac)) stack.add(ac);
+                                if (!result.contains(ac) && !stack.contains(ac)) {
+                                    stack.add(ac);
+                                }
                             }
                         }
                     }
-                    if (!result.contains(annotation)) return false;
+                    if (!result.contains(annotation)) {
+                        return false;
+                    }
                 }
                 return true;
             }

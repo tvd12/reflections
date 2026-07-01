@@ -63,7 +63,9 @@ public class SystemFileTest {
             ByteArrayOutputStream buf = new ByteArrayOutputStream();
             byte[] chunk = new byte[64];
             int n;
-            while ((n = is.read(chunk)) != -1) buf.write(chunk, 0, n);
+            while ((n = is.read(chunk)) != -1) {
+                buf.write(chunk, 0, n);
+            }
             assertEquals("hello", buf.toString());
         }
     }

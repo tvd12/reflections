@@ -102,10 +102,14 @@ public class IterablesExtTest {
         Iterable<String> result = Iterables.concat(a, b);
 
         List<String> first = new ArrayList<>();
-        for (String s : result) first.add(s);
+        for (String s : result) {
+            first.add(s);
+        }
 
         List<String> second = new ArrayList<>();
-        for (String s : result) second.add(s);
+        for (String s : result) {
+            second.add(s);
+        }
 
         assertEquals(first, second);
     }

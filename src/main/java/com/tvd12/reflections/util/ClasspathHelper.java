@@ -269,8 +269,9 @@ public abstract class ClasspathHelper {
             final String path = servletContext.getRealPath("/WEB-INF/classes");
             if (path != null) {
                 final File file = new File(path);
-                if (file.exists())
+                if (file.exists()) {
                     return file.toURI().toURL();
+                }
             } else {
                 return servletContext.getResource("/WEB-INF/classes");
             }
@@ -311,16 +312,26 @@ public abstract class ClasspathHelper {
             final String part = cleanPath(url);
             File jarFile = new File(part);
             try (JarFile myJar = new JarFile(part)) {
-                URL validUrl = tryToGetValidUrl(jarFile.getPath(), new File(part).getParent(), part);
+                URL validUrl = tryToGetValidUrl(
+                    jarFile.getPath(),
+                    new File(part).getParent(),
+                    part
+                );
                 if (validUrl != null) {
                     result.add(validUrl);
                 }
                 final Manifest manifest = myJar.getManifest();
                 if (manifest != null) {
-                    final String classPath = manifest.getMainAttributes().getValue(new Attributes.Name("Class-Path"));
+                    final String classPath = manifest
+                        .getMainAttributes()
+                        .getValue(new Attributes.Name("Class-Path"));
                     if (classPath != null) {
                         for (String jar : classPath.split(" ")) {
-                            validUrl = tryToGetValidUrl(jarFile.getPath(), new File(part).getParent(), jar);
+                            validUrl = tryToGetValidUrl(
+                                jarFile.getPath(),
+                                new File(part).getParent(),
+                                jar
+                            );
                             if (validUrl != null) {
                                 result.add(validUrl);
                             }
@@ -329,7 +340,8 @@ public abstract class ClasspathHelper {
                 }
             }
         } catch (IOException e) {
-            // don't do anything, we're going on the assumption it is a jar, which could be wrong
+            // don't do anything, we're going on the assumption it is a jar,
+            // which could be wrong
         }
         return distinctUrls(result);
     }
@@ -358,14 +370,18 @@ public abstract class ClasspathHelper {
     //a little bit cryptic...
     static URL tryToGetValidUrl(String workingDir, String path, String filename) {
         try {
-            if (new File(filename).exists())
+            if (new File(filename).exists()) {
                 return new File(filename).toURI().toURL();
-            if (new File(path + File.separator + filename).exists())
+            }
+            if (new File(path + File.separator + filename).exists()) {
                 return new File(path + File.separator + filename).toURI().toURL();
-            if (new File(workingDir + File.separator + filename).exists())
+            }
+            if (new File(workingDir + File.separator + filename).exists()) {
                 return new File(workingDir + File.separator + filename).toURI().toURL();
-            if (new File(new URL(filename).getFile()).exists())
+            }
+            if (new File(new URL(filename).getFile()).exists()) {
                 return new File(new URL(filename).getFile()).toURI().toURL();
+            }
         } catch (MalformedURLException e) {
             // don't do anything, we're going on the assumption it is a jar, which could be wrong
         }
@@ -416,4 +432,3 @@ public abstract class ClasspathHelper {
         return distinct.values();
     }
 }
-
