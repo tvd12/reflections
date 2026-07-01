@@ -1,6 +1,11 @@
 package com.tvd12.reflections;
 
-import static com.tvd12.reflections.util.Utils.isEmpty;
+import com.tvd12.reflections.util.ClasspathHelper;
+import com.tvd12.reflections.util.Iterables;
+import com.tvd12.reflections.util.Lists;
+import com.tvd12.reflections.util.Predicates;
+import com.tvd12.reflections.util.Sets;
+import javassist.CtClass;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
@@ -17,11 +22,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-import com.tvd12.reflections.util.ClasspathHelper;
-import com.tvd12.reflections.util.Iterables;
-import com.tvd12.reflections.util.Lists;
-import com.tvd12.reflections.util.Predicates;
-import com.tvd12.reflections.util.Sets;
+import static com.tvd12.reflections.util.Utils.isEmpty;
 
 /** convenient java reflection helper methods
  * <p>
@@ -62,10 +63,41 @@ import com.tvd12.reflections.util.Sets;
  *     </pre>
  * */
 @SuppressWarnings({"unchecked", "rawtypes"})
-public abstract class ReflectionUtils {
+public final class ReflectionUtils {
 
     /** would include {@code Object.class} when {@link #getAllSuperTypes(Class, java.util.function.Predicate[])}. default is false. */
     public static boolean includeObject = false;
+
+    public static final boolean JAVA_9_OR_LATER = isJava9OrLater();
+
+    private ReflectionUtils() {}
+
+    private static boolean isJava9OrLater() {
+        try {
+            Class.class.getMethod("getModule");
+            return true;
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+        public static Class toClass(
+        Object implClass,
+        Class javaClass
+    ) throws Exception {
+        return ctClassToClass((CtClass) implClass, javaClass);
+    }
+
+    private static Class ctClassToClass(
+        CtClass implClass,
+        Class javaClass
+    ) throws Exception {
+        if (JAVA_9_OR_LATER) {
+            return implClass.toClass(javaClass);
+        }
+        return implClass.toClass();
+    }
 
     /** get all super types of given {@code type}, including, optionally filtered by {@code predicates}
      * <p> include {@code Object.class} if {@link #includeObject} is true */
