@@ -21,7 +21,4 @@ public final class Files {
             stream.write(bytes);
         }
 	}
-	
-	
-	
 }
