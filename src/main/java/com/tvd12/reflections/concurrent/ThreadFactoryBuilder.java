@@ -1,6 +1,5 @@
 package com.tvd12.reflections.concurrent;
 
-import javax.annotation.Nonnull;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -33,5 +32,4 @@ public class ThreadFactoryBuilder {
             return thread;
         };
 	}
-
 }
