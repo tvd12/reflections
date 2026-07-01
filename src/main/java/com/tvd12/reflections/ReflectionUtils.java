@@ -74,6 +74,7 @@ public final class ReflectionUtils {
 
     private static boolean isJava9OrLater() {
         try {
+            //noinspection JavaReflectionMemberAccess
             Class.class.getMethod("getModule");
             return true;
         } catch (NoSuchMethodException e) {

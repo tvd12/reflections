@@ -20,6 +20,9 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Set;
 
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.CtNewMethod;
 import org.junit.Test;
 
 import com.tvd12.reflections.ReflectionUtils;
@@ -160,6 +163,40 @@ public class ReflectionUtilsExtTest {
     public void forNameReturnsNullForUnknownClass() {
         Class<?> clazz = ReflectionUtils.forName("com.nonexistent.ClassName12345");
         assertNull(clazz);
+    }
+
+    // ---- toClass ----
+
+    @Test
+    public void toClassConvertsCtClass() throws Exception {
+        ClassPool classPool = ClassPool.getDefault();
+        CtClass ctClass = classPool.makeClass(
+            "com.tvd12.reflections.ReflectionUtilsToClassGenerated"
+                + System.nanoTime()
+        );
+        ctClass.addMethod(CtNewMethod.make(
+            "public String message() { return \"ok\"; }",
+            ctClass
+        ));
+
+        Class<?> clazz = ReflectionUtils.toClass(
+            ctClass,
+            ReflectionUtils.class
+        );
+        Object instance = clazz.newInstance();
+
+        assertEquals(
+            "ok",
+            clazz.getMethod("message").invoke(instance)
+        );
+    }
+
+    @Test(expected = ClassCastException.class)
+    public void toClassThrowsWhenImplClassIsNotCtClass() throws Exception {
+        ReflectionUtils.toClass(
+            "not a CtClass",
+            ReflectionUtils.class
+        );
     }
 
     // ---- withAnnotations (by class array) ----
