@@ -97,5 +97,4 @@ public final class Iterables {
 	static <T> Function<Iterable<? extends T>, Iterator<? extends T>> toIterator() {
 		return Iterable::iterator;
 	}
-
 }
