@@ -20,16 +20,16 @@ public class ThreadFactoryBuilder {
 	}
 	
 	public ThreadFactory build() {
-		return new ThreadFactory() {
-			
-			@Override
-			public Thread newThread(Runnable r) {
-				Thread thread = new Thread(r);
-				thread.setDaemon(deamon);
-				thread.setName(String.format(nameFormat, COUNTER.incrementAndGet()));
-				return thread;
-			}
-		};
+		return r -> {
+            Thread thread = new Thread(r);
+            thread.setDaemon(deamon);
+            thread.setName(
+                String.format(
+                    nameFormat,
+                    COUNTER.incrementAndGet()
+                )
+            );
+            return thread;
+        };
 	}
-
 }

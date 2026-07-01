@@ -14,5 +14,4 @@ public abstract class UnmodifiableListIterator<E>
 	public final void set(E e) {
 		throw new UnsupportedOperationException();
 	}
-	
 }

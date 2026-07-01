@@ -1,13 +1,13 @@
 package com.tvd12.reflections.vfs;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Stack;
-
 import com.tvd12.reflections.util.AbstractIterator;
 import com.tvd12.reflections.util.Lists;
+
+import java.io.File;
+import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.List;
 
 /*
  * An implementation of {@link com.tvd12.reflections.vfs.Vfs.Dir} for directory {@link java.io.File}.
@@ -34,40 +34,32 @@ public class SystemDir implements Vfs.Dir {
         if (file == null || !file.exists()) {
             return Collections.emptyList();
         }
-        return new Iterable<Vfs.File>() {
-            public Iterator<Vfs.File> iterator() {
-                return new AbstractIterator<Vfs.File>() {
-                    final Stack<File> stack = new Stack<File>();
-                    {stack.addAll(listFiles(file));}
+        return () -> new AbstractIterator<Vfs.File>() {
+            final Deque<File> stack = new ArrayDeque<>(listFiles(file));
 
-                    protected Vfs.File computeNext() {
-                        while (!stack.isEmpty()) {
-                            final File file = stack.pop();
-                            if (file.isDirectory()) {
-                                stack.addAll(listFiles(file));
-                            } else {
-                                return new SystemFile(SystemDir.this, file);
-                            }
-                        }
-
-                        return endOfData();
+            protected Vfs.File computeNext() {
+                while (!stack.isEmpty()) {
+                    final File file = stack.removeLast();
+                    if (file.isDirectory()) {
+                        stack.addAll(listFiles(file));
+                    } else {
+                        return new SystemFile(SystemDir.this, file);
                     }
-                };
+                }
+
+                return endOfData();
             }
         };
     }
 
     private static List<File> listFiles(final File file) {
         File[] files = file.listFiles();
-
-        if (files != null)
-            return Lists.newArrayList(files);
-        else
-            return Lists.newArrayList();
+        return files != null
+            ? Lists.newArrayList(files)
+            : Lists.newArrayList();
     }
 
-    public void close() {
-    }
+    public void close() {}
 
     @Override
     public String toString() {

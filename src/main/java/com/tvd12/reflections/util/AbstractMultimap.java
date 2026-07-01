@@ -1,7 +1,9 @@
 package com.tvd12.reflections.util;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -20,11 +22,18 @@ public class AbstractMultimap<K, V> implements Multimap<K, V> {
 		this.factory = factory;
 	}
 	
+	private Collection<V> getOrCreate(K key) {
+		Collection<V> answer = (Collection<V>) map.get(key);
+		if (answer == null) {
+			answer = (Collection<V>) factory.get();
+			map.put(key, answer);
+		}
+		return answer;
+	}
+
 	@Override
 	public boolean put(K key, V item) {
-		Collection<V> value = get(key);
-		boolean answer = value.add(item);
-		return answer;
+		return getOrCreate(key).add(item);
 	}
 	
 	@Override
@@ -38,12 +47,8 @@ public class AbstractMultimap<K, V> implements Multimap<K, V> {
 	
 	@Override
 	public Collection<V> get(K key) {
-		Object answer = map.get(key);
-		if(answer == null) {
-			answer = factory.get();
-			map.put(key, answer);
-		}
-		return (Collection<V>)answer;
+		Collection<V> answer = (Collection<V>) map.get(key);
+		return answer != null ? answer : Collections.emptySet();
 	}
 	
 	@Override
@@ -58,13 +63,14 @@ public class AbstractMultimap<K, V> implements Multimap<K, V> {
 	
 	@Override
 	public Iterable<Entry<K, V>> entries() {
-		Set<Entry<K, V>> set = new HashSet<>();
-		for(Object key : map.keySet()) {
+		List<Entry<K, V>> result = new ArrayList<>();
+		for (Object key : map.keySet()) {
 			Collection<V> items = (Collection<V>) map.get(key);
-			for(V value : items)
-				set.add(new ImmutableEntry(key, value));
+			for (V value : items) {
+				result.add(new ImmutableEntry<>((K) key, value));
+			}
 		}
-		return set;
+		return result;
 	}
 	
 	@Override

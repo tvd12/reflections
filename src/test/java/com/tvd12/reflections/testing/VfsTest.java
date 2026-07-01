@@ -276,9 +276,11 @@ public class VfsTest {
         Collection<URL> urls = ClasspathHelper.forClassLoader();
         for (URL url : urls) {
         	System.out.println("url: " + url);
-            if (!url.toExternalForm().contains("surefire") && 
-            		url.toExternalForm().endsWith(".jar") &&
-            		!url.toString().contains("resources.jar")) return url; //damn
+            if (!url.toExternalForm().contains("surefire") &&
+                url.toExternalForm().endsWith(".jar") &&
+                !url.toString().contains("resources.jar")) {
+                return url; //damn
+            }
         }
         throw new RuntimeException();
     }

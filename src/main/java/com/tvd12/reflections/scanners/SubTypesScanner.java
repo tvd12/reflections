@@ -16,7 +16,10 @@ public class SubTypesScanner extends AbstractScanner {
      * @param excludeObjectClass if false, include direct {@link Object} subtypes in results.  */
     public SubTypesScanner(boolean excludeObjectClass) {
         if (excludeObjectClass) {
-            filterResultsBy(new FilterBuilder().exclude(Object.class.getName())); //exclude direct Object subtypes
+            filterResultsBy(
+                new FilterBuilder()
+                    .exclude(Object.class.getName())
+            ); //exclude direct Object subtypes
         }
     }
 
@@ -29,7 +32,9 @@ public class SubTypesScanner extends AbstractScanner {
             getStore().put(superclass, className);
         }
 
-		for (String anInterface : (List<String>) getMetadataAdapter().getInterfacesNames(cls)) {
+		for (String anInterface : (List<String>) getMetadataAdapter()
+            .getInterfacesNames(cls)
+        ) {
 			if (acceptResult(anInterface)) {
                 getStore().put(anInterface, className);
             }

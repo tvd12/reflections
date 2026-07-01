@@ -1,17 +1,5 @@
 package com.tvd12.reflections.util;
 
-import java.net.URL;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.function.Predicate;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 import com.tvd12.reflections.Configuration;
 import com.tvd12.reflections.Reflections;
 import com.tvd12.reflections.ReflectionsException;
@@ -24,6 +12,17 @@ import com.tvd12.reflections.scanners.SubTypesScanner;
 import com.tvd12.reflections.scanners.TypeAnnotationsScanner;
 import com.tvd12.reflections.serializers.Serializer;
 import com.tvd12.reflections.serializers.XmlSerializer;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.net.URL;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.function.Predicate;
 
 /**
  * a fluent builder for {@link com.tvd12.reflections.Configuration}, to be used for constructing a {@link com.tvd12.reflections.Reflections} instance
@@ -42,7 +41,8 @@ import com.tvd12.reflections.serializers.XmlSerializer;
  */
 /*lazy*/ @SuppressWarnings("rawtypes")
 public class ConfigurationBuilder implements Configuration {
-    @Nonnull private Set<Scanner> scanners;
+    @Nonnull private final Set<Scanner> scanners;
+    @SuppressWarnings("CollectionContainsUrl")
     @Nonnull private Set<URL> urls;
 	protected MetadataAdapter metadataAdapter;
     @Nullable private Predicate<String> inputsFilter;
@@ -52,7 +52,10 @@ public class ConfigurationBuilder implements Configuration {
     private boolean expandSuperTypes = true;
 
     public ConfigurationBuilder() {
-        scanners = Sets.<Scanner>newHashSet(new TypeAnnotationsScanner(), new SubTypesScanner());
+        scanners = Sets.newHashSet(
+            new TypeAnnotationsScanner(),
+            new SubTypesScanner()
+        );
         urls = Sets.newHashSet();
     }
 
@@ -79,17 +82,35 @@ public class ConfigurationBuilder implements Configuration {
         if (params != null) {
             for (Object param : params) {
                 if (param != null) {
-                    if (param.getClass().isArray()) { for (Object p : (Object[]) param) if (p != null) parameters.add(p); }
-                    else if (param instanceof Iterable) { for (Object p : (Iterable) param) if (p != null) parameters.add(p); }
-                    else parameters.add(param);
+                    if (param.getClass().isArray()) {
+                        for (Object p : (Object[]) param) {
+                            if (p != null) {
+                                parameters.add(p);
+                            }
+                        }
+                    } else if (param instanceof Iterable) {
+                        for (Object p : (Iterable) param) {
+                            if (p != null) {
+                                parameters.add(p);
+                            }
+                        }
+                    } else {
+                        parameters.add(param);
+                    }
                 }
             }
         }
 
         List<ClassLoader> loaders = Lists.newArrayList();
-        for (Object param : parameters) if (param instanceof ClassLoader) loaders.add((ClassLoader) param);
+        for (Object param : parameters) {
+            if (param instanceof ClassLoader) {
+                loaders.add((ClassLoader) param);
+            }
+        }
 
-        ClassLoader[] classLoaders = loaders.isEmpty() ? null : loaders.toArray(new ClassLoader[loaders.size()]);
+        ClassLoader[] classLoaders = loaders.isEmpty()
+            ? new ClassLoader[0]
+            : loaders.toArray(new ClassLoader[0]);
         FilterBuilder filter = new FilterBuilder();
         List<Scanner> scanners = Lists.newArrayList();
 
@@ -100,30 +121,42 @@ public class ConfigurationBuilder implements Configuration {
             }
             else if (param instanceof Class) {
                 if (Scanner.class.isAssignableFrom((Class) param)) {
-                    try { builder.addScanners(((Scanner) ((Class) param).newInstance())); } catch (Exception e) { /*fallback*/ }
+                    try {
+                        builder.addScanners(((Scanner) ((Class) param).getDeclaredConstructor().newInstance()));
+                    } catch (Exception e) {
+                        /*fallback*/
+                    }
                 }
                 builder.addUrls(ClasspathHelper.forClass((Class) param, classLoaders));
                 filter.includePackage(((Class) param));
+            } else if (param instanceof Scanner) {
+                scanners.add((Scanner) param);
+            } else if (param instanceof URL) {
+                builder.addUrls((URL) param);
+            } else if (param instanceof Predicate) {
+                filter.add((Predicate<String>) param);
+            } else if (param instanceof ExecutorService) {
+                builder.setExecutorService((ExecutorService) param);
+            } else if (!(param instanceof ClassLoader)) {
+                if (Reflections.log != null) {
+                    throw new ReflectionsException(
+                        "could not use param " + param
+                    );
+                }
             }
-            else if (param instanceof Scanner) { scanners.add((Scanner) param); }
-            else if (param instanceof URL) { builder.addUrls((URL) param); }
-            else if (param instanceof ClassLoader) { /* already taken care */ }
-            else if (param instanceof Predicate) { filter.add((Predicate<String>) param); }
-            else if (param instanceof ExecutorService) { builder.setExecutorService((ExecutorService) param); }
-            else if (Reflections.log != null) { throw new ReflectionsException("could not use param " + param); }
         }
 
         if (builder.getUrls().isEmpty()) {
-            if (classLoaders != null) {
-                builder.addUrls(ClasspathHelper.forClassLoader(classLoaders)); //default urls getResources("")
-            } else {
-                builder.addUrls(ClasspathHelper.forClassLoader()); //default urls getResources("")
-            }
+            builder.addUrls(ClasspathHelper.forClassLoader(classLoaders)); //default urls getResources("")
         }
 
         builder.filterInputsBy(filter);
-        if (!scanners.isEmpty()) { builder.setScanners(scanners.toArray(new Scanner[scanners.size()])); }
-        if (!loaders.isEmpty()) { builder.addClassLoaders(loaders); }
+        if (!scanners.isEmpty()) {
+            builder.setScanners(scanners.toArray(new Scanner[0]));
+        }
+        if (!loaders.isEmpty()) {
+            builder.addClassLoaders(loaders);
+        }
 
         return builder;
     }
@@ -193,20 +226,24 @@ public class ConfigurationBuilder implements Configuration {
      * if javassist library exists in the classpath, this method returns {@link JavassistAdapter} otherwise defaults to {@link JavaReflectionAdapter}.
      * <p>the {@link JavassistAdapter} is preferred in terms of performance and class loading. */
     public MetadataAdapter getMetadataAdapter() {
-        if (metadataAdapter != null) return metadataAdapter;
-        else {
+        if (metadataAdapter != null) {
+            return metadataAdapter;
+        } else {
             try {
                 return (metadataAdapter = new JavassistAdapter());
             } catch (Throwable e) {
-                if (Reflections.log != null)
+                if (Reflections.log != null) {
                     Reflections.log.warn("could not create JavassistAdapter, using JavaReflectionAdapter", e);
+                }
                 return (metadataAdapter = new JavaReflectionAdapter());
             }
         }
     }
 
     /** sets the metadata adapter used to fetch metadata from classes */
-    public ConfigurationBuilder setMetadataAdapter(final MetadataAdapter metadataAdapter) {
+    public ConfigurationBuilder setMetadataAdapter(
+        final MetadataAdapter metadataAdapter
+    ) {
         this.metadataAdapter = metadataAdapter;
         return this;
     }
@@ -217,13 +254,13 @@ public class ConfigurationBuilder implements Configuration {
     }
 
     /** sets the input filter for all resources to be scanned.
-     * <p> supply a {@link com.google.common.base.Predicate} or use the {@link FilterBuilder}*/
+     * <p> supply a {@link java.util.function.Predicate} or use the {@link FilterBuilder}*/
     public void setInputsFilter(@Nullable Predicate<String> inputsFilter) {
         this.inputsFilter = inputsFilter;
     }
 
     /** sets the input filter for all resources to be scanned.
-     * <p> supply a {@link com.google.common.base.Predicate} or use the {@link FilterBuilder}*/
+     * <p> supply a {@link java.util.function.Predicate} or use the {@link FilterBuilder}*/
     public ConfigurationBuilder filterInputsBy(Predicate<String> inputsFilter) {
         this.inputsFilter = inputsFilter;
         return this;
@@ -235,7 +272,9 @@ public class ConfigurationBuilder implements Configuration {
     }
 
     /** sets the executor service used for scanning. */
-    public ConfigurationBuilder setExecutorService(@Nullable ExecutorService executorService) {
+    public ConfigurationBuilder setExecutorService(
+        @Nullable ExecutorService executorService
+    ) {
         this.executorService = executorService;
         return this;
     }
@@ -250,8 +289,14 @@ public class ConfigurationBuilder implements Configuration {
      * the executor service spawns daemon threads by default.
      * <p>default is ThreadPoolExecutor with a single core */
     public ConfigurationBuilder useParallelExecutor(final int availableProcessors) {
-        ThreadFactory factory = new ThreadFactoryBuilder().setDaemon(true).setNameFormat("com.tvd12.reflections-scanner-%d").build();
-        setExecutorService(Executors.newFixedThreadPool(availableProcessors, factory));
+        ThreadFactory factory = new ThreadFactoryBuilder()
+            .setDaemon(true)
+            .setNameFormat("com.tvd12.reflections-scanner-%d")
+            .build();
+        setExecutorService(
+            Executors.newFixedThreadPool(availableProcessors,
+                factory)
+        );
         return this;
     }
 
@@ -297,12 +342,20 @@ public class ConfigurationBuilder implements Configuration {
 
     /** add class loader, might be used for resolving methods/fields */
     public ConfigurationBuilder addClassLoaders(ClassLoader... classLoaders) {
-        this.classLoaders = this.classLoaders == null ? classLoaders : ObjectArrays.concat(this.classLoaders, classLoaders, ClassLoader.class);
+        this.classLoaders = this.classLoaders == null
+            ? classLoaders
+            : ObjectArrays.concat(
+                this.classLoaders,
+                classLoaders,
+                ClassLoader.class
+            );
         return this;
     }
 
     /** add class loader, might be used for resolving methods/fields */
-    public ConfigurationBuilder addClassLoaders(Collection<ClassLoader> classLoaders) {
-        return addClassLoaders(classLoaders.toArray(new ClassLoader[classLoaders.size()]));
+    public ConfigurationBuilder addClassLoaders(
+        Collection<ClassLoader> classLoaders
+    ) {
+        return addClassLoaders(classLoaders.toArray(new ClassLoader[0]));
     }
 }

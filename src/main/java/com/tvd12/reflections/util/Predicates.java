@@ -9,36 +9,33 @@ public final class Predicates {
 
 	public static Predicate ALWAYS_TRUE_PREDICATE = new AlwaysTruePredicate<>();
 	
-	private Predicates() {
-	}
+	private Predicates() {}
 	
 	public static Predicate alwaysTrue() {
 		return ALWAYS_TRUE_PREDICATE;
 	}
 
 	public static Predicate and(Predicate[] predicates) {
-		return new Predicate() {
-
-			@Override
-			public boolean test(Object t) {
-				for (Predicate predicate : predicates) {
-					if (!predicate.test(t))
-						return false;
+		return t -> {
+            for (Predicate predicate : predicates) {
+                if (!predicate.test(t)) {
+					return false;
 				}
-				return true;
-			}
-		};
+            }
+            return true;
+        };
 	}
 
 	public static <T> Predicate<T> in(Collection<? extends T> target) {
-		return new InPredicate<T>(target);
+		return new InPredicate<>(target);
 	}
 
 	public static <T> Predicate<T> not(Predicate<T> predicate) {
-		return new NotPredicate<T>(predicate);
+		return new NotPredicate<>(predicate);
 	}
 
-	private static class InPredicate<T> implements Predicate<T>, Serializable {
+	private static class InPredicate<T>
+		implements Predicate<T>, Serializable {
 		private static final long serialVersionUID = -8049890389593544847L;
 
 		private final Collection<?> target;
@@ -118,5 +115,4 @@ public final class Predicates {
 		}
 		
 	}
-
 }

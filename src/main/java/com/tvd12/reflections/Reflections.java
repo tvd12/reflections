@@ -1,16 +1,35 @@
 package com.tvd12.reflections;
 
-import org.slf4j.Logger;
-
-import com.tvd12.reflections.scanners.*;
+import com.tvd12.reflections.scanners.FieldAnnotationsScanner;
+import com.tvd12.reflections.scanners.MemberUsageScanner;
+import com.tvd12.reflections.scanners.MethodAnnotationsScanner;
+import com.tvd12.reflections.scanners.MethodParameterNamesScanner;
+import com.tvd12.reflections.scanners.MethodParameterScanner;
+import com.tvd12.reflections.scanners.ResourcesScanner;
 import com.tvd12.reflections.scanners.Scanner;
+import com.tvd12.reflections.scanners.SubTypesScanner;
+import com.tvd12.reflections.scanners.TypeAnnotationsScanner;
 import com.tvd12.reflections.serializers.Serializer;
 import com.tvd12.reflections.serializers.XmlSerializer;
-import com.tvd12.reflections.util.*;
+import com.tvd12.reflections.util.ClasspathHelper;
+import com.tvd12.reflections.util.ConfigurationBuilder;
+import com.tvd12.reflections.util.FilterBuilder;
+import com.tvd12.reflections.util.HashMultimap;
+import com.tvd12.reflections.util.Iterables;
+import com.tvd12.reflections.util.Joiner;
+import com.tvd12.reflections.util.Lists;
+import com.tvd12.reflections.util.Multimap;
+import com.tvd12.reflections.util.Sets;
+import com.tvd12.reflections.util.Utils;
 import com.tvd12.reflections.vfs.Vfs;
+import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Inherited;
 import java.lang.reflect.AnnotatedElement;
@@ -19,17 +38,35 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-import static com.tvd12.reflections.ReflectionUtils.*;
-import static com.tvd12.reflections.util.Iterables.*;
-import static com.tvd12.reflections.util.Predicates.*;
-import static com.tvd12.reflections.util.Utils.*;
+import static com.tvd12.reflections.ReflectionUtils.filter;
+import static com.tvd12.reflections.ReflectionUtils.forName;
+import static com.tvd12.reflections.ReflectionUtils.forNames;
+import static com.tvd12.reflections.ReflectionUtils.withAnnotation;
+import static com.tvd12.reflections.ReflectionUtils.withAnyParameterAnnotation;
+import static com.tvd12.reflections.util.Iterables.concat;
+import static com.tvd12.reflections.util.Iterables.filter;
+import static com.tvd12.reflections.util.Predicates.in;
+import static com.tvd12.reflections.util.Predicates.not;
+import static com.tvd12.reflections.util.Utils.close;
+import static com.tvd12.reflections.util.Utils.findLogger;
+import static com.tvd12.reflections.util.Utils.getConstructorsFromDescriptors;
+import static com.tvd12.reflections.util.Utils.getFieldFromString;
+import static com.tvd12.reflections.util.Utils.getMembersFromDescriptors;
+import static com.tvd12.reflections.util.Utils.getMethodsFromDescriptors;
+import static com.tvd12.reflections.util.Utils.index;
+import static com.tvd12.reflections.util.Utils.name;
+import static com.tvd12.reflections.util.Utils.names;
 import static java.lang.String.format;
 
 /**
@@ -89,14 +126,14 @@ import static java.lang.String.format;
  * ResourcesScanner, MethodAnnotationsScanner, ConstructorAnnotationsScanner, FieldAnnotationsScanner,
  * MethodParameterScanner, MethodParameterNamesScanner, MemberUsageScanner or any custom scanner.
  * <p>Use {@link #getStore()} to access and query the store directly
- * <p>In order to save the store metadata, use {@link #save(String)} or {@link #save(String, com.tvd12.reflections.serializers.Serializer)}
- * for example with {@link com.tvd12.reflections.serializers.XmlSerializer} or {@link com.tvd12.reflections.serializers.JavaCodeSerializer}
- * <p>In order to collect pre saved metadata and avoid re-scanning, use {@link #collect(String, com.google.common.base.Predicate, com.tvd12.reflections.serializers.Serializer...)}}
+ * <p>In order to save the store metadata, use {@link #save(String)} or {@link #save(String, Serializer)}
+ * for example with {@link XmlSerializer} or {@link com.tvd12.reflections.serializers.JavaCodeSerializer}
+ * <p>In order to collect pre saved metadata and avoid re-scanning, use {@link #collect(String, Predicate, Serializer...)}
  * <p><i>Make sure to scan all the transitively relevant packages.
  * <br>for instance, given your class C extends B extends A, and both B and A are located in another package than C,
  * when only the package of C is scanned - then querying for sub types of A returns nothing (transitive), but querying for sub types of B returns C (direct).
  * In that case make sure to scan all relevant packages a priori.</i>
- * <p><p><p>For Javadoc, source code, and more information about Reflections Library, see http://github.com/ronmamo/reflections/
+ * <p><p><p>For Javadoc, source code, and more information about Reflections Library, see <a href="http://github.com/ronmamo/reflections/">...</a>
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class Reflections {
@@ -173,10 +210,16 @@ public class Reflections {
         store = new Store(configuration);
     }
 
+    public static Reflections empty() {
+        return new Reflections();
+    }
+
     //
     protected void scan() {
         if (configuration.getUrls() == null || configuration.getUrls().isEmpty()) {
-            if (log != null) log.warn("given scan urls are empty. set urls in the configuration");
+            if (log != null) {
+                log.warn("given scan urls are empty. set urls in the configuration");
+            }
             return;
         }
 
@@ -192,13 +235,15 @@ public class Reflections {
         for (final URL url : configuration.getUrls()) {
             try {
                 if (executorService != null) {
-                    futures.add(executorService.submit(new Runnable() {
-                        public void run() {
-                            if (log != null) {
-                                log.debug("[{}] scanning {}", Thread.currentThread().toString(), url);
-                            }
-                            scan(url);
+                    futures.add(executorService.submit(() -> {
+                        if (log != null) {
+                            log.debug(
+                                "[{}] scanning {}",
+                                Thread.currentThread(),
+                                url
+                            );
                         }
+                        scan(url);
                     }));
                 } else {
                     scan(url);
@@ -206,7 +251,11 @@ public class Reflections {
                 scannedUrls++;
             } catch (ReflectionsException e) {
                 if (log != null) {
-                    log.debug("could not create Vfs.Dir from url. ignoring the exception and continuing", e);
+                    log.debug(
+                        "could not create Vfs.Dir from url. " +
+                            "ignoring the exception and continuing",
+                        e
+                    );
                 }
             }
         }
@@ -214,7 +263,11 @@ public class Reflections {
         //todo use CompletionService
         if (executorService != null) {
             for (Future future : futures) {
-                try { future.get(); } catch (Exception e) { throw new RuntimeException(e); }
+                try {
+                    future.get();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
 
@@ -233,10 +286,20 @@ public class Reflections {
                 values += store.get(index).size();
             }
 
-            log.debug(format("Reflections took %d ms to scan %d urls, producing %d keys and %d values %s",
-                    time, scannedUrls, keys, values,
-                    executorService != null && executorService instanceof ThreadPoolExecutor ?
-                            format("[using %d cores]", ((ThreadPoolExecutor) executorService).getMaximumPoolSize()) : ""));
+            log.debug(
+                "Reflections took {} ms to scan {} urls, " +
+                    "producing {} keys and {} values {}",
+                time,
+                scannedUrls,
+                keys,
+                values,
+                executorService instanceof ThreadPoolExecutor
+                    ? format(
+                    "[using %d cores]",
+                    ((ThreadPoolExecutor) executorService)
+                        .getMaximumPoolSize())
+                    : ""
+            );
         }
     }
 
@@ -245,20 +308,32 @@ public class Reflections {
         try {
             for (final Vfs.File file : dir.getFiles()) {
                 // scan if inputs filter accepts file relative path or fqn
-                Predicate<String> inputsFilter = configuration.getInputsFilter();
+                Predicate<String> inputsFilter = configuration
+                    .getInputsFilter();
                 String path = file.getRelativePath();
                 String fqn = path.replace('/', '.');
-                if (inputsFilter == null || inputsFilter.test(path) || inputsFilter.test(fqn)) {
+                if (inputsFilter == null
+                    || inputsFilter.test(path)
+                    || inputsFilter.test(fqn)
+                ) {
                     Object classObject = null;
                     for (Scanner scanner : configuration.getScanners()) {
                         try {
-                            if (scanner.acceptsInput(path) || scanner.acceptsInput(fqn)) {
+                            if (scanner.acceptsInput(path)
+                                || scanner.acceptsInput(fqn)
+                            ) {
                                 classObject = scanner.scan(file, classObject);
                             }
                         } catch (Exception e) {
                             if (log != null) {
                                 // SLF4J will filter out Throwables from the format string arguments.
-                                log.debug("could not scan file {} in url {} with scanner {}", file.getRelativePath(), url.toExternalForm(), scanner.getClass().getSimpleName(), e);
+                                log.debug(
+                                    "could not scan file {} in url {} with scanner {}",
+                                    file.getRelativePath(),
+                                    url.toExternalForm(),
+                                    scanner.getClass().getSimpleName(),
+                                    e
+                                );
                             }
                         }
                     }
@@ -274,7 +349,10 @@ public class Reflections {
      * and includes files matching the pattern .*-reflections.xml
      * */
     public static Reflections collect() {
-        return collect("META-INF/reflections/", new FilterBuilder().include(".*-reflections.xml"));
+        return collect(
+            "META-INF/reflections/",
+            new FilterBuilder().include(".*-reflections.xml")
+        );
     }
 
     /**
@@ -285,14 +363,27 @@ public class Reflections {
      * so that relevant urls could be found much faster
      * @param optionalSerializer - optionally supply one serializer instance. if not specified or null, {@link com.tvd12.reflections.serializers.XmlSerializer} will be used
      */
-    public static Reflections collect(final String packagePrefix, final Predicate<String> resourceNameFilter, @Nullable Serializer... optionalSerializer) {
-        Serializer serializer = optionalSerializer != null && optionalSerializer.length == 1 ? optionalSerializer[0] : new XmlSerializer();
+    public static Reflections collect(
+        final String packagePrefix,
+        final Predicate<String> resourceNameFilter,
+        @Nullable Serializer... optionalSerializer
+    ) {
+        Serializer serializer = optionalSerializer != null
+            && optionalSerializer.length == 1
+            ? optionalSerializer[0]
+            : new XmlSerializer();
 
         Collection<URL> urls = ClasspathHelper.forPackage(packagePrefix);
-        if (urls.isEmpty()) return null;
+        if (urls.isEmpty()) {
+            return new Reflections();
+        }
         long start = System.currentTimeMillis();
         final Reflections reflections = new Reflections();
-        Iterable<Vfs.File> files = Vfs.findFiles(urls, packagePrefix, resourceNameFilter);
+        Iterable<Vfs.File> files = Vfs.findFiles(
+            urls,
+            packagePrefix,
+            resourceNameFilter
+        );
         for (final Vfs.File file : files) {
             InputStream inputStream = null;
             try {
@@ -314,8 +405,18 @@ public class Reflections {
                 values += store.get(index).size();
             }
 
-            log.debug(format("Reflections took %d ms to collect %d url%s, producing %d keys and %d values [%s]",
-                    System.currentTimeMillis() - start, urls.size(), urls.size() > 1 ? "s" : "", keys, values, Joiner.on(", ").join(urls)));
+            log.debug(
+                "Reflections took {} ms to collect {} url{}, " +
+                    "producing {} keys and {} values [{}]",
+                System.currentTimeMillis() - start,
+                urls.size(),
+                urls.size() > 1
+                    ? "s"
+                    : "",
+                keys,
+                values,
+                Joiner.on(", ").join(urls)
+            );
         }
         return reflections;
     }
@@ -326,9 +427,18 @@ public class Reflections {
     public Reflections collect(final InputStream inputStream) {
         try {
             merge(configuration.getSerializer().read(inputStream));
-            if (log != null) log.debug("Reflections collected metadata from input stream using serializer " + configuration.getSerializer().getClass().getName());
+            if (log != null) {
+                log.debug(
+                    "Reflections collected metadata from input " +
+                        "stream using serializer {}",
+                    configuration.getSerializer().getClass().getName()
+                );
+            }
         } catch (Exception ex) {
-            throw new ReflectionsException("could not merge input stream", ex);
+            throw new ReflectionsException(
+                "could not merge input stream",
+                ex
+            );
         }
 
         return this;
@@ -392,10 +502,19 @@ public class Reflections {
         }
     }
 
-    private void expandSupertypes(Multimap<String, String> mmap, String key, Class<?> type) {
+    private void expandSupertypes(
+        Multimap<String, String> mmap,
+        String key, Class<?> type
+    ) {
         for (Class<?> supertype : ReflectionUtils.getSuperTypes(type)) {
             if (mmap.put(supertype.getName(), key)) {
-                if (log != null) log.debug("expanded subtype {} -> {}", supertype.getName(), key);
+                if (log != null) {
+                    log.debug(
+                        "expanded subtype {} -> {}",
+                        supertype.getName(),
+                        key
+                    );
+                }
                 expandSupertypes(mmap, supertype.getName(), supertype);
             }
         }
@@ -407,11 +526,13 @@ public class Reflections {
      * <p/>depends on SubTypesScanner configured
      */
     public <T> Set<Class<? extends T>> getSubTypesOf(final Class<T> type) {
-    		String index = index(SubTypesScanner.class);
-    		List<String> typeNames = Arrays.asList(type.getName());
-    		Iterable<String> all = store.getAll(index, typeNames);
-    		ClassLoader[] loaders = loaders();
-    		List<Class<? extends T>> classes = ReflectionUtils.<T>forNames(all, loaders);
+        String index = index(SubTypesScanner.class);
+        List<String> typeNames = Collections
+            .singletonList(type.getName());
+        Iterable<String> all = store.getAll(index, typeNames);
+        ClassLoader[] loaders = loaders();
+        List<Class<? extends T>> classes = ReflectionUtils
+            .forNames(all, loaders);
         return Sets.newHashSet(classes);
     }
 
@@ -423,7 +544,9 @@ public class Reflections {
      * Also, this meta-annotation causes annotations to be inherited only from superclasses; annotations on implemented interfaces have no effect.</i>
      * <p/>depends on TypeAnnotationsScanner and SubTypesScanner configured
      */
-    public Set<Class<?>> getTypesAnnotatedWith(final Class<? extends Annotation> annotation) {
+    public Set<Class<?>> getTypesAnnotatedWith(
+        final Class<? extends Annotation> annotation
+    ) {
         return getTypesAnnotatedWith(annotation, false);
     }
 
@@ -436,10 +559,25 @@ public class Reflections {
      * Also, this meta-annotation causes annotations to be inherited only from superclasses; annotations on implemented interfaces have no effect.</i>
      * <p/>depends on TypeAnnotationsScanner and SubTypesScanner configured
      */
-    public Set<Class<?>> getTypesAnnotatedWith(final Class<? extends Annotation> annotation, boolean honorInherited) {
-        Iterable<String> annotated = store.get(index(TypeAnnotationsScanner.class), annotation.getName());
-        Iterable<String> classes = getAllAnnotated(annotated, annotation.isAnnotationPresent(Inherited.class), honorInherited);
-        return Sets.newHashSet(Iterables.concat(forNames(annotated, loaders()), forNames(classes, loaders())));
+    public Set<Class<?>> getTypesAnnotatedWith(
+        final Class<? extends Annotation> annotation,
+        boolean honorInherited
+    ) {
+        Iterable<String> annotated = store.get(
+            index(TypeAnnotationsScanner.class),
+            annotation.getName()
+        );
+        Iterable<String> classes = getAllAnnotated(
+            annotated,
+            annotation.isAnnotationPresent(Inherited.class),
+            honorInherited
+        );
+        return Sets.newHashSet(
+            Iterables.concat(
+                forNames(annotated, loaders()),
+                forNames(classes, loaders())
+            )
+        );
     }
 
     /**
@@ -447,7 +585,9 @@ public class Reflections {
      * <p>{@link java.lang.annotation.Inherited} is not honored by default
      * <p/>depends on TypeAnnotationsScanner configured
      */
-    public Set<Class<?>> getTypesAnnotatedWith(final Annotation annotation) {
+    public Set<Class<?>> getTypesAnnotatedWith(
+        final Annotation annotation
+    ) {
         return getTypesAnnotatedWith(annotation, false);
     }
 
@@ -456,29 +596,72 @@ public class Reflections {
      * <p>{@link java.lang.annotation.Inherited} is honored according to given honorInherited
      * <p/>depends on TypeAnnotationsScanner configured
      */
-    public Set<Class<?>> getTypesAnnotatedWith(final Annotation annotation, boolean honorInherited) {
-        Iterable<String> annotated = store.get(index(TypeAnnotationsScanner.class), annotation.annotationType().getName());
-        Iterable<Class<?>> filter = Iterables.filter(forNames(annotated, loaders()), withAnnotation(annotation));
-        Iterable<String> classes = getAllAnnotated(names(filter), annotation.annotationType().isAnnotationPresent(Inherited.class), honorInherited);
-        return Sets.newHashSet(concat(filter, forNames(filter(classes, not(in(Sets.newHashSet(annotated)))), loaders())));
+    public Set<Class<?>> getTypesAnnotatedWith(
+        final Annotation annotation,
+        boolean honorInherited
+    ) {
+        Iterable<String> annotated = store.get(
+            index(TypeAnnotationsScanner.class),
+            annotation.annotationType().getName()
+        );
+        Iterable<Class<?>> filter = Iterables.filter(
+            forNames(annotated, loaders()),
+            withAnnotation(annotation)
+        );
+        Iterable<String> classes = getAllAnnotated(
+            names(filter),
+            annotation
+                .annotationType()
+                .isAnnotationPresent(Inherited.class),
+            honorInherited
+        );
+        return Sets.newHashSet(
+            concat(filter,
+                forNames(
+                    filter(
+                        classes,
+                        not(in(Sets.newHashSet(annotated)))
+                    ),
+                    loaders()
+                )
+            )
+        );
     }
 
-    protected Iterable<String> getAllAnnotated(Iterable<String> annotated, boolean inherited, boolean honorInherited) {
+    protected Iterable<String> getAllAnnotated(
+        Iterable<String> annotated,
+        boolean inherited,
+        boolean honorInherited
+    ) {
         if (honorInherited) {
             if (inherited) {
-                Iterable<String> subTypes = store.get(index(SubTypesScanner.class), filter(annotated, new Predicate<String>() {
-                    public boolean test(@Nullable String input) {
-                        final Class<?> type = forName(input, loaders());
-                        return type != null && !type.isInterface();
-                    }
-                }));
-                return Iterables.concat(subTypes, store.getAll(index(SubTypesScanner.class), subTypes));
+                Iterable<String> subTypes = store.get(
+                    index(SubTypesScanner.class),
+                    filter(annotated,
+                        input -> {
+                            final Class<?> type = ReflectionUtils
+                                .forName(input, loaders());
+                            return type != null && !type.isInterface();
+                        }));
+                return Iterables.concat(
+                    subTypes,
+                    store.getAll(index(SubTypesScanner.class), subTypes)
+                );
             } else {
                 return annotated;
             }
         } else {
-            Iterable<String> subTypes = Iterables.concat(annotated, store.getAll(index(TypeAnnotationsScanner.class), annotated));
-            return Iterables.concat(subTypes, store.getAll(index(SubTypesScanner.class), subTypes));
+            Iterable<String> subTypes = Iterables.concat(
+                annotated,
+                store.getAll(
+                    index(TypeAnnotationsScanner.class),
+                    annotated
+                )
+            );
+            return Iterables.concat(
+                subTypes,
+                store.getAll(index(SubTypesScanner.class), subTypes)
+            );
         }
     }
 
@@ -486,8 +669,13 @@ public class Reflections {
      * get all methods annotated with a given annotation
      * <p/>depends on MethodAnnotationsScanner configured
      */
-    public Set<Method> getMethodsAnnotatedWith(final Class<? extends Annotation> annotation) {
-        Iterable<String> methods = store.get(index(MethodAnnotationsScanner.class), annotation.getName());
+    public Set<Method> getMethodsAnnotatedWith(
+        final Class<? extends Annotation> annotation
+    ) {
+        Iterable<String> methods = store.get(
+            index(MethodAnnotationsScanner.class),
+            annotation.getName()
+        );
         return getMethodsFromDescriptors(methods, loaders());
     }
 
@@ -495,40 +683,74 @@ public class Reflections {
      * get all methods annotated with a given annotation, including annotation member values matching
      * <p/>depends on MethodAnnotationsScanner configured
      */
-    public Set<Method> getMethodsAnnotatedWith(final Annotation annotation) {
-    		Set<Method> methods = getMethodsAnnotatedWith(annotation.annotationType());
-    		Predicate<AnnotatedElement> predicate = withAnnotation(annotation);
-    		Set<Method> answer = filter(methods, predicate);
-    		return answer;
+    public Set<Method> getMethodsAnnotatedWith(
+        final Annotation annotation
+    ) {
+        Set<Method> methods = getMethodsAnnotatedWith(
+            annotation.annotationType()
+        );
+        Predicate<AnnotatedElement> predicate = withAnnotation(annotation);
+        return filter(methods, predicate);
     }
 
     /** get methods with parameter types matching given {@code types}*/
     public Set<Method> getMethodsMatchParams(Class<?>... types) {
-        return getMethodsFromDescriptors(store.get(index(MethodParameterScanner.class), names(types).toString()), loaders());
+        return getMethodsFromDescriptors(
+            store.get(
+                index(MethodParameterScanner.class),
+                names(types).toString()
+            ),
+            loaders()
+        );
     }
 
     /** get methods with return type match given type */
     public Set<Method> getMethodsReturn(Class returnType) {
-        return getMethodsFromDescriptors(store.get(index(MethodParameterScanner.class), names(returnType)), loaders());
+        return getMethodsFromDescriptors(
+            store.get(
+                index(MethodParameterScanner.class),
+                names(returnType)
+            ),
+            loaders()
+        );
     }
 
     /** get methods with any parameter annotated with given annotation */
-    public Set<Method> getMethodsWithAnyParamAnnotated(Class<? extends Annotation> annotation) {
-        return getMethodsFromDescriptors(store.get(index(MethodParameterScanner.class), annotation.getName()), loaders());
-
+    public Set<Method> getMethodsWithAnyParamAnnotated(
+        Class<? extends Annotation> annotation
+    ) {
+        return getMethodsFromDescriptors(
+            store.get(
+                index(MethodParameterScanner.class),
+                annotation.getName()
+            ),
+            loaders()
+        );
     }
 
     /** get methods with any parameter annotated with given annotation, including annotation member values matching */
-    public Set<Method> getMethodsWithAnyParamAnnotated(Annotation annotation) {
-        return filter(getMethodsWithAnyParamAnnotated(annotation.annotationType()), withAnyParameterAnnotation(annotation));
+    public Set<Method> getMethodsWithAnyParamAnnotated(
+        Annotation annotation
+    ) {
+        return filter(
+            getMethodsWithAnyParamAnnotated(
+                annotation.annotationType()
+            ),
+            withAnyParameterAnnotation(annotation)
+        );
     }
 
     /**
      * get all constructors annotated with a given annotation
      * <p/>depends on MethodAnnotationsScanner configured
      */
-    public Set<Constructor> getConstructorsAnnotatedWith(final Class<? extends Annotation> annotation) {
-        Iterable<String> methods = store.get(index(MethodAnnotationsScanner.class), annotation.getName());
+    public Set<Constructor> getConstructorsAnnotatedWith(
+        final Class<? extends Annotation> annotation
+    ) {
+        Iterable<String> methods = store.get(
+            index(MethodAnnotationsScanner.class),
+            annotation.getName()
+        );
         return getConstructorsFromDescriptors(methods, loaders());
     }
 
@@ -536,35 +758,68 @@ public class Reflections {
      * get all constructors annotated with a given annotation, including annotation member values matching
      * <p/>depends on MethodAnnotationsScanner configured
      */
-    public Set<Constructor> getConstructorsAnnotatedWith(final Annotation annotation) {
-    		Set<Constructor> constructors = getConstructorsAnnotatedWith(annotation.annotationType());
-    		Predicate<AnnotatedElement> predicate = withAnnotation(annotation);
-    		Set<Constructor> answer = filter(constructors, predicate);
-    		return answer;
+    public Set<Constructor> getConstructorsAnnotatedWith(
+        final Annotation annotation
+    ) {
+        Set<Constructor> constructors = getConstructorsAnnotatedWith(
+            annotation.annotationType()
+        );
+        Predicate<AnnotatedElement> predicate = withAnnotation(annotation);
+        return filter(constructors, predicate);
     }
 
     /** get constructors with parameter types matching given {@code types}*/
-    public Set<Constructor> getConstructorsMatchParams(Class<?>... types) {
-        return getConstructorsFromDescriptors(store.get(index(MethodParameterScanner.class), names(types).toString()), loaders());
+    public Set<Constructor> getConstructorsMatchParams(
+        Class<?>... types
+    ) {
+        return getConstructorsFromDescriptors(
+            store.get(
+                index(MethodParameterScanner.class),
+                names(types).toString()
+            ),
+            loaders()
+        );
     }
 
     /** get constructors with any parameter annotated with given annotation */
-    public Set<Constructor> getConstructorsWithAnyParamAnnotated(Class<? extends Annotation> annotation) {
-        return getConstructorsFromDescriptors(store.get(index(MethodParameterScanner.class), annotation.getName()), loaders());
+    public Set<Constructor> getConstructorsWithAnyParamAnnotated(
+        Class<? extends Annotation> annotation
+    ) {
+        return getConstructorsFromDescriptors(
+            store.get(
+                index(MethodParameterScanner.class),
+                annotation.getName()
+            ),
+            loaders()
+        );
     }
 
     /** get constructors with any parameter annotated with given annotation, including annotation member values matching */
-    public Set<Constructor> getConstructorsWithAnyParamAnnotated(Annotation annotation) {
-        return filter(getConstructorsWithAnyParamAnnotated(annotation.annotationType()), withAnyParameterAnnotation(annotation));
+    public Set<Constructor> getConstructorsWithAnyParamAnnotated(
+        Annotation annotation
+    ) {
+        return filter(
+            getConstructorsWithAnyParamAnnotated(
+                annotation.annotationType()
+            ),
+            withAnyParameterAnnotation(annotation)
+        );
     }
 
     /**
      * get all fields annotated with a given annotation
      * <p/>depends on FieldAnnotationsScanner configured
      */
-    public Set<Field> getFieldsAnnotatedWith(final Class<? extends Annotation> annotation) {
+    public Set<Field> getFieldsAnnotatedWith(
+        final Class<? extends Annotation> annotation
+    ) {
         final Set<Field> result = Sets.newHashSet();
-        for (String annotated : store.get(index(FieldAnnotationsScanner.class), annotation.getName())) {
+        for (String annotated :
+            store.get(
+                index(FieldAnnotationsScanner.class),
+                annotation.getName()
+            )
+        ) {
             result.add(getFieldFromString(annotated, loaders()));
         }
         return result;
@@ -574,18 +829,30 @@ public class Reflections {
      * get all methods annotated with a given annotation, including annotation member values matching
      * <p/>depends on FieldAnnotationsScanner configured
      */
-    public Set<Field> getFieldsAnnotatedWith(final Annotation annotation) {
-    		Set<Field> fields = getFieldsAnnotatedWith(annotation.annotationType());
-    		Predicate<AnnotatedElement> predicate = withAnnotation(annotation);
+    public Set<Field> getFieldsAnnotatedWith(
+        final Annotation annotation
+    ) {
+        Set<Field> fields = getFieldsAnnotatedWith(
+            annotation.annotationType()
+        );
+        Predicate<AnnotatedElement> predicate = withAnnotation(annotation);
         return filter(fields, predicate);
     }
 
     /** get resources relative paths where simple name (key) matches given namePredicate
      * <p>depends on ResourcesScanner configured
      * */
-    public Set<String> getResources(final Predicate<String> namePredicate) {
-        Iterable<String> resources = Iterables.filter(store.get(index(ResourcesScanner.class)).keySet(), namePredicate);
-        return Sets.newHashSet(store.get(index(ResourcesScanner.class), resources));
+    public Set<String> getResources(
+        final Predicate<String> namePredicate
+    ) {
+        Iterable<String> resources = Iterables.filter(
+            store.get(index(ResourcesScanner.class)).keySet(),
+            namePredicate
+        );
+        return Sets.newHashSet(
+            store.get(index(ResourcesScanner.class),
+                resources)
+        );
     }
 
     /** get resources relative paths where simple name (key) matches given regular expression
@@ -593,48 +860,65 @@ public class Reflections {
      * <pre>Set<String> xmls = reflections.getResources(".*\\.xml");</pre>
      */
     public Set<String> getResources(final Pattern pattern) {
-        return getResources(new Predicate<String>() {
-            public boolean test(String input) {
-                return pattern.matcher(input).matches();
-            }
-        });
+        return getResources(input -> pattern.matcher(input).matches());
     }
 
     /** get parameter names of given {@code method}
      * <p>depends on MethodParameterNamesScanner configured
      */
     public List<String> getMethodParamNames(Method method) {
-        Iterable<String> names = store.get(index(MethodParameterNamesScanner.class), name(method));
-        return !Iterables.isEmpty(names) ? Arrays.asList(Iterables.getOnlyElement(names).split(", ")) : Arrays.<String>asList();
+        Iterable<String> names = store.get(
+            index(MethodParameterNamesScanner.class),
+            name(method)
+        );
+        return !Iterables.isEmpty(names)
+            ? Arrays.asList(Iterables.getOnlyElement(names).split(", "))
+            : Collections.emptyList();
     }
 
     /** get parameter names of given {@code constructor}
      * <p>depends on MethodParameterNamesScanner configured
      */
-    public List<String> getConstructorParamNames(Constructor constructor) {
-        Iterable<String> names = store.get(index(MethodParameterNamesScanner.class), Utils.name(constructor));
-        return !Iterables.isEmpty(names) ? Arrays.asList(Iterables.getOnlyElement(names).split(", ")) : Arrays.<String>asList();
+    public List<String> getConstructorParamNames(
+        Constructor constructor
+    ) {
+        Iterable<String> names = store.get(
+            index(MethodParameterNamesScanner.class),
+            Utils.name(constructor)
+        );
+        return !Iterables.isEmpty(names)
+            ? Arrays.asList(Iterables.getOnlyElement(names).split(", "))
+            : Collections.emptyList();
     }
 
     /** get all given {@code field} usages in methods and constructors
      * <p>depends on MemberUsageScanner configured
      */
     public Set<Member> getFieldUsage(Field field) {
-        return getMembersFromDescriptors(store.get(index(MemberUsageScanner.class), name(field)));
+        return getMembersFromDescriptors(
+            store.get(
+                index(MemberUsageScanner.class),
+                name(field)
+            )
+        );
     }
 
     /** get all given {@code method} usages in methods and constructors
      * <p>depends on MemberUsageScanner configured
      */
     public Set<Member> getMethodUsage(Method method) {
-        return getMembersFromDescriptors(store.get(index(MemberUsageScanner.class), name(method)));
+        return getMembersFromDescriptors(
+            store.get(index(MemberUsageScanner.class), name(method))
+        );
     }
 
     /** get all given {@code constructors} usages in methods and constructors
      * <p>depends on MemberUsageScanner configured
      */
     public Set<Member> getConstructorUsage(Constructor constructor) {
-        return getMembersFromDescriptors(store.get(index(MemberUsageScanner.class), name(constructor)));
+        return getMembersFromDescriptors(
+            store.get(index(MemberUsageScanner.class), name(constructor))
+        );
     }
 
     /** get all types scanned. this is effectively similar to getting all subtypes of Object.
@@ -644,10 +928,18 @@ public class Reflections {
      * @return Set of String, and not of Class, in order to avoid definition of all types in PermGen
      */
     public Set<String> getAllTypes() {
-        Set<String> allTypes = Sets.newHashSet(store.getAll(index(SubTypesScanner.class), Object.class.getName()));
+        Set<String> allTypes = Sets.newHashSet(
+            store.getAll(
+                index(SubTypesScanner.class),
+                Object.class.getName()
+            )
+        );
         if (allTypes.isEmpty()) {
-            throw new ReflectionsException("Couldn't find subtypes of Object. " +
-                    "Make sure SubTypesScanner initialized to include Object class - new SubTypesScanner(false)");
+            throw new ReflectionsException(
+                "Couldn't find subtypes of Object. " +
+                    "Make sure SubTypesScanner initialized to " +
+                    "include Object class - new SubTypesScanner(false)"
+            );
         }
         return allTypes;
     }
@@ -679,10 +971,17 @@ public class Reflections {
      */
     public File save(final String filename, final Serializer serializer) {
         File file = serializer.save(this, filename);
-        if (log != null) //noinspection ConstantConditions
-            log.debug("Reflections successfully saved in " + file.getAbsolutePath() + " using " + serializer.getClass().getSimpleName());
+        if (log != null) { //noinspection ConstantConditions
+            log.debug(
+                "Reflections successfully saved in {} using {}",
+                file.getAbsolutePath(),
+                serializer.getClass().getSimpleName()
+            );
+        }
         return file;
     }
 
-    private ClassLoader[] loaders() { return configuration.getClassLoaders(); }
+    private ClassLoader[] loaders() {
+        return configuration.getClassLoaders();
+    }
 }

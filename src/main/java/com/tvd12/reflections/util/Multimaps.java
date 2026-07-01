@@ -7,16 +7,17 @@ import java.util.function.Supplier;
 
 public final class Multimaps {
 
-	private Multimaps() {
-	}
+	private Multimaps() {}
 
 	public static <K,V> SetMultimap<K, V> newSetMultimap(
 			HashMap<K, Collection<V>> map,
 	        Supplier<Set<V>> factory) {
-		return new SetMultimapProxy<K, V>(map, factory);
+		return new SetMultimapProxy<>(map, factory);
 	}
 
-	public static SetMultimap<String, String> synchronizedSetMultimap(SetMultimap<String, String> multimap) {
+	public static SetMultimap<String, String> synchronizedSetMultimap(
+		SetMultimap<String, String> multimap
+	) {
 		return new SynchronizedSetMultimap<>(multimap);
 	}
 	

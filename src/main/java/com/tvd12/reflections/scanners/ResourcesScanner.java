@@ -5,6 +5,7 @@ import com.tvd12.reflections.vfs.Vfs;
 /** collects all resources that are not classes in a collection
  * <p>key: value - {web.xml: WEB-INF/web.xml} */
 public class ResourcesScanner extends AbstractScanner {
+
     public boolean acceptsInput(String file) {
         return !file.endsWith(".class"); //not a class
     }
