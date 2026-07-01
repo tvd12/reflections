@@ -4,7 +4,7 @@
 
 	<groupId>com.tvd12</groupId>
 	<artifactId>reflections</artifactId>
-	<version>1.0.3</version>
+	<version>1.0.4</version>
 
 	<name>Reflections</name>
 	<description>Reflections - a Java runtime metadata analysis</description>
@@ -44,13 +44,6 @@
 		</developer>
 	</developers>
 
-	<distributionManagement>
-		<snapshotRepository>
-			<id>ossrh</id>
-			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
-		</snapshotRepository>
-	</distributionManagement>
-
 	<properties>
 		<jdk.version>1.8</jdk.version>
 		<javassist.version>3.32.0-GA</javassist.version>
@@ -73,7 +66,7 @@
 		<maven-javadoc-plugin.version>3.1.0</maven-javadoc-plugin.version>
 		<maven-bundle-plugin.version>5.1.6</maven-bundle-plugin.version>
 		<maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
-		<nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+		<central-publishing-maven-plugin.version>0.9.0</central-publishing-maven-plugin.version>
 	</properties>
 
 	<dependencies>
@@ -263,21 +256,17 @@
 			</build>
 		</profile>
 		<profile>
-			<id>sonatype</id>
+			<id>central</id>
 			<distributionManagement>
-				<downloadUrl>https://oss.sonatype.org/content/groups/public</downloadUrl>
 				<repository>
-					<id>oss.sonatype.org</id>
-					<url>https://oss.sonatype.org/service/local/staging/deploy/maven2</url>
+					<id>central</id>
+					<name>Maven Central via Central Portal</name>
+					<url>https://central.sonatype.com/api/v1/publish</url>
 				</repository>
 				<snapshotRepository>
-					<id>oss.sonatype.org</id>
-					<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+					<id>central</id>
+					<url>https://central.sonatype.com/api/v1/publish</url>
 				</snapshotRepository>
-				<site>
-					<id>com.tvd12</id>
-					<url>http://www.tvd12.com/</url>
-				</site>
 			</distributionManagement>
 			<build>
 				<plugins>
@@ -352,24 +341,13 @@
 						</executions>
 					</plugin>
 					<plugin>
-						<groupId>org.sonatype.plugins</groupId>
-						<artifactId>nexus-staging-maven-plugin</artifactId>
-						<version>${nexus-staging-maven-plugin.version}</version>
+						<groupId>org.sonatype.central</groupId>
+						<artifactId>central-publishing-maven-plugin</artifactId>
+						<version>${central-publishing-maven-plugin.version}</version>
 						<extensions>true</extensions>
 						<configuration>
-							<serverId>oss.sonatype.org</serverId>
-							<nexusUrl>https://oss.sonatype.org/</nexusUrl>
+							<publishingServerId>central</publishingServerId>
 						</configuration>
-						<executions>
-							<execution>
-								<id>deploy-to-sonatype</id>
-								<phase>deploy</phase>
-								<goals>
-									<goal>deploy</goal>
-									<goal>release</goal>
-								</goals>
-							</execution>
-						</executions>
 					</plugin>
 					<plugin>
 						<groupId>org.apache.felix</groupId>
