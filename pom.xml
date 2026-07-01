@@ -65,7 +65,7 @@
 		<maven-source-plugin.version>3.1.0</maven-source-plugin.version>
 		<maven-javadoc-plugin.version>3.1.0</maven-javadoc-plugin.version>
 		<maven-bundle-plugin.version>5.1.6</maven-bundle-plugin.version>
-		<maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
+		<maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
 		<central-publishing-maven-plugin.version>0.9.0</central-publishing-maven-plugin.version>
 	</properties>
 

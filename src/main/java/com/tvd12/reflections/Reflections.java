@@ -186,7 +186,7 @@ public class Reflections {
      *     <li>{@link ClassLoader} - would use this classloaders in order to find urls in {@link com.tvd12.reflections.util.ClasspathHelper#forPackage(String, ClassLoader...)} and {@link com.tvd12.reflections.util.ClasspathHelper#forClass(Class, ClassLoader...)}</li>
      *     <li>{@link com.tvd12.reflections.scanners.Scanner} - would use given scanner, overriding the default scanners</li>
      *     <li>{@link java.net.URL} - would add the given url for scanning</li>
-     *     <li>{@link Object[]} - would use each element as above</li>
+     *     <li>{@code Object[]} - would use each element as above</li>
      * </ul>
      *
      * use any parameter type in any order. this constructor uses instanceof on each param and instantiate a {@link com.tvd12.reflections.util.ConfigurationBuilder} appropriately.
