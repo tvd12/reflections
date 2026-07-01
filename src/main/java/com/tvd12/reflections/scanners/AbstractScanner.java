@@ -26,9 +26,15 @@ public abstract class AbstractScanner implements Scanner {
     public Object scan(Vfs.File file, Object classObject) {
         if (classObject == null) {
             try {
-                classObject = configuration.getMetadataAdapter().getOrCreateClassObject(file);
+                classObject = configuration
+                    .getMetadataAdapter()
+                    .getOrCreateClassObject(file);
             } catch (Exception e) {
-                throw new ReflectionsException("could not create class object from file " + file.getRelativePath(), e);
+                throw new ReflectionsException(
+                    "could not create class object from file " +
+                        file.getRelativePath(),
+                    e
+                );
             }
         }
         if (classObject == null) {
@@ -45,7 +51,9 @@ public abstract class AbstractScanner implements Scanner {
         return configuration;
     }
 
-    public void setConfiguration(final Configuration configuration) {
+    public void setConfiguration(
+        final Configuration configuration
+    ) {
         this.configuration = configuration;
     }
 
